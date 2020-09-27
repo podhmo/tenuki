@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"testing"
@@ -31,14 +32,14 @@ func (f *Facade) Extract() *ExtractFacade {
 	return f.extractor
 }
 
-func (f *ExtractFacade) buffer(res *http.Response) io.Reader {
+func (f *ExtractFacade) buffer(res *http.Response) *bytes.Buffer {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	k := fmt.Sprintf("%p", res) // xxx
 	cache := f.cache[k]
 	if cache != nil {
-		return bytes.NewReader(cache)
+		return bytes.NewBuffer(cache)
 	}
 
 	t := f.T
@@ -56,7 +57,7 @@ func (f *ExtractFacade) buffer(res *http.Response) io.Reader {
 
 	cache = b.Bytes()
 	f.cache[k] = cache
-	return bytes.NewReader(cache)
+	return bytes.NewBuffer(cache)
 }
 
 func (f *ExtractFacade) JSON(res *http.Response, ob interface{}) {
@@ -67,4 +68,14 @@ func (f *ExtractFacade) JSON(res *http.Response, ob interface{}) {
 	if err := decoder.Decode(&ob); err != nil {
 		t.Fatalf("!! DecodeJSON: %+v", err)
 	}
+}
+func (f *ExtractFacade) Bytes(res *http.Response) []byte {
+	t := f.T
+	t.Helper()
+	return f.buffer(res).Bytes()
+}
+
+func DecodeJSON(r io.Reader, ob interface{}) error {
+	defer io.Copy(ioutil.Discard, r)
+	return json.NewDecoder(r).Decode(ob)
 }
