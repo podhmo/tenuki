@@ -4,22 +4,36 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type Facade struct {
-	T      *testing.T
-	Client *http.Client
+	T       *testing.T
+	Client  *http.Client
+	Capture bool
 }
 
 func New(t *testing.T) *Facade {
-	return &Facade{T: t}
+	return &Facade{T: t, Capture: true}
 }
 
 func (f *Facade) client() *http.Client {
 	if f.Client != nil {
 		return f.Client
 	}
-	return http.DefaultClient
+
+	client := &http.Client{
+		Transport: http.DefaultTransport,
+		Timeout:   10 * time.Second, // xxx
+	}
+	if f.Capture {
+		client.Transport = &CapturedTransport{
+			T:         f.T,
+			Transport: client.Transport,
+		}
+	}
+	f.Client = client
+	return client
 }
 
 func (f *Facade) NewRequest(method, url string, body io.Reader) *http.Request {

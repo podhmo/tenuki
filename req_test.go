@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
 	"github.com/podhmo/reqtest"
 )
 
