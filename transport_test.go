@@ -3,6 +3,7 @@ package reqtest_test
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/podhmo/reqtest"
@@ -18,10 +19,12 @@ func TestHandlerRoundTripper(t *testing.T) {
 		},
 	}
 
-	req := f.NewRequest("GET", "http:", nil)
-	q := req.URL.Query()
-	q.Add("suffix", " !!")
-	req.URL.RawQuery = q.Encode()
+	req := f.NewRequest(
+		"GET", "http:", nil,
+		reqtest.WithQuery(func(q url.Values) {
+			q.Add("suffix", " !!")
+		}),
+	)
 
 	res := f.Do(req)
 

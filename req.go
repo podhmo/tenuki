@@ -3,6 +3,7 @@ package reqtest
 import (
 	"io"
 	"net/http"
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -41,7 +42,12 @@ func (f *Facade) client() *http.Client {
 	return client
 }
 
-func (f *Facade) NewRequest(method, url string, body io.Reader) *http.Request {
+type RequestOption func(*http.Request)
+
+func (f *Facade) NewRequest(
+	method, url string, body io.Reader,
+	options ...RequestOption,
+) *http.Request {
 	t := f.T
 	t.Helper()
 
@@ -49,10 +55,31 @@ func (f *Facade) NewRequest(method, url string, body io.Reader) *http.Request {
 	if err != nil {
 		t.Fatalf("!! NewRequest: %+v", err)
 	}
+	for _, opt := range options {
+		opt(req)
+	}
 	return req
 }
 
-func (f *Facade) Do(req *http.Request, options ...AssertOption) *http.Response {
+func WithResetQuery(modify func(u url.Values)) RequestOption {
+	return func(req *http.Request) {
+		var q url.Values
+		modify(q)
+		req.URL.RawQuery = q.Encode()
+	}
+}
+func WithQuery(modify func(u url.Values)) RequestOption {
+	return func(req *http.Request) {
+		q := req.URL.Query()
+		modify(q)
+		req.URL.RawQuery = q.Encode()
+	}
+}
+
+func (f *Facade) Do(
+	req *http.Request,
+	options ...AssertOption,
+) *http.Response {
 	t := f.T
 	t.Helper()
 
