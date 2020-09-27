@@ -10,7 +10,6 @@ import (
 type RenderFacade struct {
 	w  http.ResponseWriter
 	r  *http.Request
-	ok int
 	ng int
 }
 
@@ -18,19 +17,14 @@ func Render(w http.ResponseWriter, r *http.Request) *RenderFacade {
 	return &RenderFacade{
 		w:  w,
 		r:  r,
-		ok: http.StatusOK,
 		ng: http.StatusInternalServerError,
 	}
-}
-func (f *RenderFacade) SetOKStatus(code int) *RenderFacade {
-	f.ok = code
-	return f
 }
 func (f *RenderFacade) SetNGStatus(code int) *RenderFacade {
 	f.ng = code
 	return f
 }
-func (f *RenderFacade) JSON(v interface{}) {
+func (f *RenderFacade) JSON(code int, v interface{}) {
 	w := f.w
 
 	buf := &bytes.Buffer{}
@@ -42,17 +36,17 @@ func (f *RenderFacade) JSON(v interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if f.ok > 0 {
-		w.WriteHeader(f.ok)
+	if code > 0 {
+		w.WriteHeader(code)
 	}
 	w.Write(buf.Bytes())
 }
-func (f *RenderFacade) JSONArray(v interface{}) {
+func (f *RenderFacade) JSONArray(code int, v interface{}) {
 	// Force to return empty JSON array [] instead of null in case of zero slice.
 	val := reflect.ValueOf(v)
 	if val.Kind() == reflect.Slice && val.IsNil() {
 		v = reflect.MakeSlice(val.Type(), 0, 0).Interface()
 	}
 
-	f.JSON(v)
+	f.JSON(code, v)
 }
