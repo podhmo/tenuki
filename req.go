@@ -24,7 +24,7 @@ type Facade struct {
 	T      *testing.T
 	Client *http.Client
 
-	Capture bool
+	capture bool
 	wrapped bool
 
 	extractor *ExtractFacade
@@ -32,7 +32,7 @@ type Facade struct {
 }
 
 func New(t *testing.T) *Facade {
-	return &Facade{T: t, Capture: captureDefault}
+	return &Facade{T: t, capture: captureDefault}
 }
 
 func (f *Facade) client() *http.Client {
@@ -55,7 +55,7 @@ func (f *Facade) client() *http.Client {
 		}
 	}
 
-	if f.Capture {
+	if f.capture {
 		client.Transport = &CapturedTransport{
 			T:         f.T,
 			Transport: client.Transport,
@@ -63,6 +63,29 @@ func (f *Facade) client() *http.Client {
 	}
 	f.Client = client
 	return client
+}
+
+var noop = func() {}
+
+func (f *Facade) Capture(t *testing.T) func() {
+	if !f.capture {
+		return noop
+	}
+	t.Helper()
+
+	transport := f.client().Transport
+	internal, ok := transport.(*CapturedTransport)
+	if !ok {
+		t.Fatalf("!! Capture: something wrong, transport is not captured")
+		return noop
+	}
+	teardown := internal.Capture(t)
+	return func() {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		teardown()
+		internal.T = f.T // rollback
+	}
 }
 
 func (f *Facade) NewRequest(
