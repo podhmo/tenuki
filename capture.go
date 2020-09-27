@@ -1,4 +1,4 @@
-package reqtest
+package tenuki
 
 import (
 	"fmt"

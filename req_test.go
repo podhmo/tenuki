@@ -1,4 +1,4 @@
-package reqtest_test
+package tenuki_test
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/podhmo/reqtest"
+	"github.com/podhmo/tenuki"
 )
 
 func TestIt(t *testing.T) {
@@ -18,20 +18,20 @@ func TestIt(t *testing.T) {
 
 	sumHandler := func(w http.ResponseWriter, r *http.Request) {
 		var xs []int
-		reqtest.DecodeJSON(r.Body, &xs)
+		tenuki.DecodeJSON(r.Body, &xs)
 		n := 0
 		for i := range xs {
 			n += xs[i]
 		}
-		reqtest.Render(w, r).JSON(200, Body{Message: fmt.Sprintf("sum is %d", n)})
+		tenuki.Render(w, r).JSON(200, Body{Message: fmt.Sprintf("sum is %d", n)})
 	}
 	ts := httptest.NewServer(http.HandlerFunc(sumHandler))
 	defer ts.Close()
 
-	f := reqtest.New(t)
+	f := tenuki.New(t)
 	res := f.Do(
 		f.NewRequest("Post", ts.URL, strings.NewReader(`[1,2,3]`)),
-		reqtest.AssertStatus(http.StatusOK),
+		tenuki.AssertStatus(http.StatusOK),
 	)
 
 	// assertion

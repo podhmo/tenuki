@@ -1,3 +1,3 @@
-module github.com/podhmo/reqtest
+module github.com/podhmo/tenuki
 
 go 1.15

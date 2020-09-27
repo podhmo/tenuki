@@ -1,2 +1,3 @@
-# req
-test helper
+# tenuki
+
+test helper for web api testing

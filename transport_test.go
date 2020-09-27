@@ -1,17 +1,17 @@
-package reqtest_test
+package tenuki_test
 
 import (
 	"fmt"
 	"net/http"
 	"testing"
 
-	"github.com/podhmo/reqtest"
+	"github.com/podhmo/tenuki"
 )
 
 func TestHandlerRoundTripper(t *testing.T) {
-	f := reqtest.New(t)
+	f := tenuki.New(t)
 	f.Client = &http.Client{
-		Transport: &reqtest.HandlerTripper{
+		Transport: &tenuki.HandlerTripper{
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, "hello world"+r.URL.Query().Get("suffix"))
 			}),
