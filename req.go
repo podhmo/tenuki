@@ -82,8 +82,8 @@ func AssertStatus(code int) AssertOption {
 		a.StatusCode = code
 		a.Checks = append(a.Checks, func(t *testing.T, res *http.Response) {
 			t.Helper()
-			if a.StatusCode != code {
-				t.Errorf("status code: want %d, but got %d", a.StatusCode, code)
+			if a.StatusCode != res.StatusCode {
+				t.Errorf("status code:\nwant\n\t%+v\nbut\n\t%+v", a.StatusCode, res.StatusCode)
 			}
 		})
 	}
