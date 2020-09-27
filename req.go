@@ -3,14 +3,19 @@ package reqtest
 import (
 	"io"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 )
 
 type Facade struct {
-	T       *testing.T
-	Client  *http.Client
+	T      *testing.T
+	Client *http.Client
+
 	Capture bool
+
+	extractor *ExtractFacade
+	mu        sync.Mutex
 }
 
 func New(t *testing.T) *Facade {

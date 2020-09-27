@@ -3,6 +3,7 @@ package reqtest
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -10,21 +11,28 @@ import (
 
 type ExtractFacade struct {
 	T     *testing.T
-	cache map[*http.Response]*bytes.Reader
+	cache map[string][]byte
 }
 
 func (f *Facade) Extract() *ExtractFacade {
-	return &ExtractFacade{
-		T:     f.T,
-		cache: map[*http.Response]*bytes.Reader{},
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.extractor != nil {
+		return f.extractor
 	}
+	f.extractor = &ExtractFacade{
+		T:     f.T,
+		cache: map[string][]byte{},
+	}
+	return f.extractor
 }
 
 func (f *ExtractFacade) buffer(res *http.Response) io.Reader {
-	cache := f.cache[res]
+	k := fmt.Sprintf("%p", res) // xxx
+	cache := f.cache[k]
 	if cache != nil {
-		cache.Seek(0, 0)
-		return cache
+		return bytes.NewReader(cache)
 	}
 
 	t := f.T
@@ -40,9 +48,9 @@ func (f *ExtractFacade) buffer(res *http.Response) io.Reader {
 		}
 	}()
 
-	cache = bytes.NewReader(b.Bytes())
-	f.cache[res] = cache
-	return cache
+	cache = b.Bytes()
+	f.cache[k] = cache
+	return bytes.NewReader(cache)
 }
 
 func (f *ExtractFacade) JSON(res *http.Response, ob interface{}) {
