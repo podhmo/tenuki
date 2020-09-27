@@ -22,14 +22,16 @@ func TestIt(t *testing.T) {
 
 	f := reqtest.New(t)
 	req := f.NewRequest("GET", ts.URL, nil)
-	res := f.Do(req,
-		reqtest.AssertStatus(http.StatusOK),
-	)
+	res := f.Do(req)
+
+	if want, got := http.StatusOK, res.StatusCode; want != got {
+		t.Errorf("status code:\nwant\n\t%+v\nbut\n\t%+v", want, got)
+	}
 
 	want := body{Message: "hello world"}
 	var got body
 	f.Extract().JSON(res, &got)
 	if !reflect.DeepEqual(want, got) {
-		t.Errorf("want\n\t%v\nbut\n\t%v", want, got)
+		t.Errorf("response body\nwant\n\t%+v\nbut\n\t%+v", want, got)
 	}
 }
