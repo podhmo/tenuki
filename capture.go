@@ -22,7 +22,7 @@ func (ct *CapturedTransport) Capture(t *testing.T) func() {
 
 func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if ct.T == nil {
-		fmt.Fprintln(os.Stderr, "!! CapturedTransport.T is not found. please use !!")
+		fmt.Fprintln(os.Stderr, "!! CapturedTransport.T is not found !!")
 		fmt.Fprintln(os.Stderr, "please use `defer transport.Capture(t)()`")
 	}
 

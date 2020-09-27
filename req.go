@@ -14,6 +14,7 @@ type Facade struct {
 	Client *http.Client
 
 	Capture bool
+	wrapped bool
 
 	extractor *ExtractFacade
 	mu        sync.Mutex
@@ -24,14 +25,25 @@ func New(t *testing.T) *Facade {
 }
 
 func (f *Facade) client() *http.Client {
-	if f.Client != nil {
-		return f.Client
+	client := f.Client
+	if client != nil {
+		if f.wrapped {
+			return client
+		}
+		if client == http.DefaultClient {
+			panic("!! invalid: http.DefaultClient is used")
+		}
 	}
 
-	client := &http.Client{
-		Transport: http.DefaultTransport,
-		Timeout:   10 * time.Second, // xxx
+	f.wrapped = true
+
+	if client == nil {
+		client = &http.Client{
+			Transport: http.DefaultTransport,
+			Timeout:   10 * time.Second, // xxx
+		}
 	}
+
 	if f.Capture {
 		client.Transport = &CapturedTransport{
 			T:         f.T,
