@@ -36,7 +36,7 @@ func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error
 		return nil, err
 	}
 
-	ct.T.Logf("request: %s", string(b))
+	ct.T.Logf("\x1b[5G\x1b[0K\x1b[90mrequest:\n%s\x1b[0m", string(b))
 
 	res, err := transport.RoundTrip(req)
 	if err != nil {
@@ -47,6 +47,6 @@ func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error
 	if err != nil {
 		return nil, err
 	}
-	ct.T.Logf("response: %s", string(b))
+	ct.T.Logf("\x1b[5G\x1b[0K\x1b[90mresponse:\n%s\x1b[0m", string(b))
 	return res, nil
 }
