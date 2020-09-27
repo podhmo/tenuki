@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"testing"
 )
 
 type ExtractFacade struct {
-	T     *testing.T
+	T *testing.T
+
 	cache map[string][]byte
+	mu    sync.Mutex
 }
 
 func (f *Facade) Extract() *ExtractFacade {
@@ -29,6 +32,9 @@ func (f *Facade) Extract() *ExtractFacade {
 }
 
 func (f *ExtractFacade) buffer(res *http.Response) io.Reader {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	k := fmt.Sprintf("%p", res) // xxx
 	cache := f.cache[k]
 	if cache != nil {
