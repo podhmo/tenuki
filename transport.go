@@ -11,6 +11,12 @@ func (f RoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
+func HandlerTripperFunc(handle func(w http.ResponseWriter, r *http.Request)) *HandlerTripper {
+	return &HandlerTripper{
+		Handler: http.HandlerFunc(handle),
+	}
+}
+
 type HandlerTripper struct {
 	Before  func(*http.Request)
 	Handler http.Handler
