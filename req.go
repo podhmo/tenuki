@@ -3,10 +3,22 @@ package tenuki
 import (
 	"io"
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 )
+
+var (
+	captureDefault bool = true
+)
+
+func init() {
+	if ok, _ := strconv.ParseBool(os.Getenv("NOCAPTURE")); ok {
+		captureDefault = false
+	}
+}
 
 type Facade struct {
 	T      *testing.T
@@ -20,7 +32,7 @@ type Facade struct {
 }
 
 func New(t *testing.T) *Facade {
-	return &Facade{T: t, Capture: true}
+	return &Facade{T: t, Capture: captureDefault}
 }
 
 func (f *Facade) client() *http.Client {
