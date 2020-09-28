@@ -2,16 +2,14 @@ package capture
 
 import (
 	"net/http"
-	"net/http/httputil"
 )
 
 type CapturedTransport struct {
 	Transport http.RoundTripper
 	Printer   printer
-}
 
-type printer interface {
-	Printf(fmt string, args ...interface{})
+	DumpRequest  func(printer, *http.Request) error
+	DumpResponse func(printer, *http.Response) error
 }
 
 func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -19,23 +17,35 @@ func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-
-	b, err := httputil.DumpRequest(req, true /* body */)
-	if err != nil {
-		return nil, err
+	dumpRequest := ct.DumpRequest
+	if dumpRequest == nil {
+		dumpRequest = DefaultDumper.DumpRequest
+	}
+	dumpResponse := ct.DumpResponse
+	if dumpResponse == nil {
+		dumpResponse = DefaultDumper.DumpResponse
 	}
 
-	ct.Printer.Printf("\x1b[90mrequest:\n%s\x1b[0m", string(b))
-
+	if err := dumpRequest(ct.Printer, req); err != nil {
+		return nil, err
+	}
 	res, err := transport.RoundTrip(req)
 	if err != nil {
 		return nil, err
 	}
-
-	b, err = httputil.DumpResponse(res, true /* body */)
-	if err != nil {
+	if err := dumpResponse(ct.Printer, res); err != nil {
 		return nil, err
 	}
-	ct.Printer.Printf("\x1b[90mresponse:\n%s\x1b[0m", string(b))
 	return res, nil
 }
+
+type printer interface {
+	Printf(fmt string, args ...interface{})
+}
+
+type Dumper interface {
+	DumpRequest(p printer, req *http.Request) error
+	DumpResponse(p printer, res *http.Response) error
+}
+
+var DefaultDumper Dumper = &ConsoleDumper{}
