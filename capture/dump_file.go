@@ -32,13 +32,10 @@ func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) strin
 		}
 	}
 
-	i := d.i
+	i := atomic.AddInt64(&d.i, inc)
 	filename := fmt.Sprintf("%04d%s", i, suffix)
-	if inc > 0 {
-		i = atomic.AddInt64(&d.i, inc)
-		filename = fmt.Sprintf("%04d%s", i, suffix)
-		fmt.Fprintf(d.RecordWriter, "{\"file\": %q, \"url\": %q}\r\n", filename, req.URL.String())
-	}
+
+	fmt.Fprintf(d.RecordWriter, "{\"file\": %q, \"url\": %q}\r\n", filename, req.URL.String())
 	return filename
 }
 
