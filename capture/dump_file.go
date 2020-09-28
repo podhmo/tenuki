@@ -3,24 +3,43 @@ package capture
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 )
 
 type FileDumper struct {
-	i       int64
-	BaseDir Dir
+	i            int64
+	BaseDir      Dir
+	RecordWriter io.Writer
 }
 
 func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) string {
-	i := atomic.AddInt64(&d.i, inc)
-	method := req.Method
-	return fmt.Sprintf("%04d%s@%s", i, method, strings.Replace(req.URL.String(), "/", "@", -1)+suffix)
+	if d.RecordWriter == nil {
+		f, err := d.BaseDir.Open("records.txt")
+		// xxx: does not Close()
+
+		d.RecordWriter = f
+		if err != nil {
+			if err != nil {
+				log.Printf("create records.txt failured: %+v", err)
+			}
+			d.RecordWriter = ioutil.Discard
+		}
+	}
+
+	i := d.i
+	filename := fmt.Sprintf("%04d%s", i, suffix)
+	if inc > 0 {
+		i = atomic.AddInt64(&d.i, inc)
+		filename = fmt.Sprintf("%04d%s", i, suffix)
+		fmt.Fprintf(d.RecordWriter, `{"file" "%q", "url": %q}\n`, req.URL.String())
+	}
+	return filename
 }
 
 func (d *FileDumper) DumpRequest(p printer, req *http.Request) error {
