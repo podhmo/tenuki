@@ -83,6 +83,7 @@ func (d Dir) Open(filename string) (io.WriteCloser, error) {
 		}
 	}
 
-	log.Println("\ttrace to", filename)
-	return os.Create(filepath.Join(dir, filename))
+	fullname := filepath.Join(dir, filename)
+	log.Println("\ttrace to", fullname)
+	return os.Create(fullname)
 }
