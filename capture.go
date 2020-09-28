@@ -35,6 +35,7 @@ func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error
 		return nil, err
 	}
 
+	// TODO: use Printf? and then this prefix is used in adapter
 	ct.T.Logf("\x1b[5G\x1b[0K\x1b[90mrequest:\n%s\x1b[0m", string(b))
 
 	res, err := transport.RoundTrip(req)
