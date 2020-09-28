@@ -17,14 +17,14 @@ type FileDumper struct {
 	BaseDir Dir
 }
 
-func (d *FileDumper) FileName(req *http.Request, suffix string) string {
-	i := atomic.AddInt64(&d.i, 1)
+func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) string {
+	i := atomic.AddInt64(&d.i, inc)
 	method := req.Method
 	return fmt.Sprintf("%04d%s@%s", i, method, strings.Replace(req.URL.String(), "/", "@", -1)+suffix)
 }
 
 func (d *FileDumper) DumpRequest(p printer, req *http.Request) error {
-	filename := d.FileName(req, ".req")
+	filename := d.FileName(req, ".req", 1)
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (d *FileDumper) DumpRequest(p printer, req *http.Request) error {
 	return nil
 }
 func (d *FileDumper) DumpResponse(p printer, res *http.Response) error {
-	filename := d.FileName(res.Request, ".res")
+	filename := d.FileName(res.Request, ".res", 0)
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
 		return err
