@@ -5,15 +5,14 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"testing"
 )
 
 type CapturedTransport struct {
 	Transport http.RoundTripper
-	T         *testing.T
+	T         hasLogf
 }
 
-func (ct *CapturedTransport) Capture(t *testing.T) func() {
+func (ct *CapturedTransport) Capture(t hasLogf) func() {
 	ct.T = t
 	return func() {
 		ct.T = nil
@@ -49,4 +48,23 @@ func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error
 	}
 	ct.T.Logf("\x1b[5G\x1b[0K\x1b[90mresponse:\n%s\x1b[0m", string(b))
 	return res, nil
+}
+
+func ToLogf(p printer) hasLogf {
+	return &logfAdapter{printer: p}
+}
+
+type printer interface {
+	Printf(fmt string, args ...interface{})
+}
+type logfAdapter struct {
+	printer printer
+}
+
+func (a *logfAdapter) Logf(fmt string, args ...interface{}) {
+	a.printer.Printf(fmt, args...)
+}
+
+type hasLogf interface {
+	Logf(fmt string, args ...interface{})
 }
