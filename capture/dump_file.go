@@ -37,8 +37,7 @@ func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) strin
 	if inc > 0 {
 		i = atomic.AddInt64(&d.i, inc)
 		filename = fmt.Sprintf("%04d%s", i, suffix)
-		fmt.Fprintf(d.RecordWriter, `{"file" "%q", "url": %q}`, req.URL.String())
-		fmt.Fprintln(d.RecordWriter, "")
+		fmt.Fprintf(d.RecordWriter, "{\"file\": %q, \"url\": %q}", filename, req.URL.String())
 	}
 	return filename
 }
@@ -65,6 +64,20 @@ func (d *FileDumper) DumpResponse(p printer, res *http.Response) error {
 		return err
 	}
 	defer f.Close()
+
+	{
+		req := res.Request
+		reqURI := req.RequestURI
+		if reqURI == "" {
+			reqURI = req.URL.RequestURI()
+		}
+		method := req.Method
+		if method == "" {
+			method = "GET"
+		}
+		fmt.Fprintf(f, "%s %s HTTP/%d.%d\r\n", method,
+			reqURI, req.ProtoMajor, req.ProtoMinor)
+	}
 
 	b, err := httputil.DumpResponse(res, true /* body */)
 	if err != nil {
