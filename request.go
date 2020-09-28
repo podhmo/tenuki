@@ -56,10 +56,9 @@ func (f *Facade) client() *http.Client {
 	}
 
 	if f.capture {
-		client.Transport = &CapturedTransport{
-			T:         f.T,
-			Transport: client.Transport,
-		}
+		transport := &CapturedTransport{T: f.T}
+		transport.Transport = client.Transport
+		client.Transport = transport
 	}
 	f.Client = client
 	return client
