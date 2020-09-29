@@ -39,49 +39,61 @@ func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) strin
 	return filename
 }
 
-func (d *FileDumper) DumpRequest(p printer, req *http.Request) error {
+func (d *FileDumper) DumpRequest(p printer, req *http.Request) (State, error) {
 	filename := d.FileName(req, ".req", 1)
+	state := fileState{request: req, FileName: filename}
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
-		return err
+		return state, err
 	}
 	defer f.Close()
 
 	b, err := httputil.DumpRequest(req, true /* body */)
 	if err != nil {
-		return err
+		return state, err
 	}
 	f.Write(b)
-	return nil
+	return state, nil
 }
-func (d *FileDumper) DumpResponse(p printer, res *http.Response) error {
-	filename := d.FileName(res.Request, ".res", 0)
+
+func (d *FileDumper) DumpError(p printer, state State, err error) error {
+	req := state.Request()
+	filename := d.FileName(req, ".error", 0)
+	f, _ := d.BaseDir.Open(filename)
+	d.dumpHeader(f, req)
+	fmt.Fprintf(f, "%+v\n", err)
+	return err
+}
+
+func (d *FileDumper) DumpResponse(p printer, state State, res *http.Response) error {
+	req := res.Request
+	filename := d.FileName(req, ".res", 0)
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	{
-		req := res.Request
-		reqURI := req.RequestURI
-		if reqURI == "" {
-			reqURI = req.URL.RequestURI()
-		}
-		method := req.Method
-		if method == "" {
-			method = "GET"
-		}
-		fmt.Fprintf(f, "%s %s HTTP/%d.%d\r\n", method,
-			reqURI, req.ProtoMajor, req.ProtoMinor)
-	}
-
+	d.dumpHeader(f, req)
 	b, err := httputil.DumpResponse(res, true /* body */)
 	if err != nil {
 		return err
 	}
 	f.Write(b)
 	return nil
+}
+
+func (d *FileDumper) dumpHeader(w io.Writer, req *http.Request) {
+	reqURI := req.RequestURI
+	if reqURI == "" {
+		reqURI = req.URL.RequestURI()
+	}
+	method := req.Method
+	if method == "" {
+		method = "GET"
+	}
+	fmt.Fprintf(w, "%s %s HTTP/%d.%d\r\n", method,
+		reqURI, req.ProtoMajor, req.ProtoMinor)
 }
 
 type Dir string
@@ -98,3 +110,14 @@ func (d Dir) Open(filename string) (io.WriteCloser, error) {
 	log.Println("\ttrace to", fullname)
 	return os.Create(fullname)
 }
+
+type fileState struct {
+	request  *http.Request
+	FileName string
+}
+
+func (s fileState) Request() *http.Request {
+	return s.request
+}
+
+var _ Dumper = &FileDumper{}
