@@ -66,27 +66,6 @@ func (f *Facade) client() *http.Client {
 
 var noop = func() {}
 
-func (f *Facade) Capture(t *testing.T) func() {
-	if !f.capture {
-		return noop
-	}
-	t.Helper()
-
-	transport := f.client().Transport
-	internal, ok := transport.(*CapturedTransport)
-	if !ok {
-		t.Fatalf("!! Capture: something wrong, transport is not captured")
-		return noop
-	}
-	teardown := internal.Capture(t)
-	return func() {
-		f.mu.Lock()
-		defer f.mu.Unlock()
-		teardown()
-		internal.T = f.T // rollback
-	}
-}
-
 func (f *Facade) NewRequest(
 	method, url string, body io.Reader,
 ) *http.Request {
