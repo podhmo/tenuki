@@ -73,6 +73,7 @@ func (f *Facade) Do(
 		panic("!! invalid: http.DefaultClient is used")
 	}
 
+	// TODO: not goroutine safe
 	originalTransport := client.Transport
 	if f.captureEnabled {
 		transport := &CapturedTransport{T: f.T}
