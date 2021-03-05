@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	captureDefault bool = true
+	CaptureEnabledDefault bool = true
 )
 
 func init() {
 	if ok, _ := strconv.ParseBool(os.Getenv("NOCAPTURE")); ok {
-		captureDefault = false
+		CaptureEnabledDefault = false
 	}
 }
 
@@ -24,43 +24,34 @@ type Facade struct {
 	T      *testing.T
 	Client *http.Client
 
-	capture bool
-	wrapped bool
+	captureEnabled bool
 
 	extractor *ExtractFacade
 	mu        sync.Mutex
 }
 
-func New(t *testing.T) *Facade {
-	return &Facade{T: t, capture: captureDefault}
+func New(t *testing.T, options ...func(*Facade)) *Facade {
+	f := &Facade{T: t, captureEnabled: CaptureEnabledDefault}
+	for _, opt := range options {
+		opt(f)
+	}
+	if f.Client == nil {
+		f.Client = &http.Client{Timeout: 1 * time.Second}
+	}
+	return f
 }
 
 func (f *Facade) client() *http.Client {
 	client := f.Client
-	if client != nil {
-		if f.wrapped {
-			return client
-		}
-		if client == http.DefaultClient {
-			panic("!! invalid: http.DefaultClient is used")
-		}
+	if client == http.DefaultClient {
+		panic("!! invalid: http.DefaultClient is used")
 	}
 
-	f.wrapped = true
-
-	if client == nil {
-		client = &http.Client{
-			Transport: http.DefaultTransport,
-			Timeout:   10 * time.Second, // xxx
-		}
-	}
-
-	if f.capture {
+	if f.captureEnabled {
 		transport := &CapturedTransport{T: f.T}
 		transport.Transport = client.Transport
 		client.Transport = transport
 	}
-	f.Client = client
 	return client
 }
 
