@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	captureDefault bool = true
+	CaptureEnabledDefault bool = true
 )
 
 func init() {
 	if ok, _ := strconv.ParseBool(os.Getenv("NOCAPTURE")); ok {
-		captureDefault = false
+		CaptureEnabledDefault = false
 	}
 }
 
@@ -24,68 +24,24 @@ type Facade struct {
 	T      *testing.T
 	Client *http.Client
 
-	capture bool
-	wrapped bool
+	captureEnabled bool
 
 	extractor *ExtractFacade
 	mu        sync.Mutex
 }
 
-func New(t *testing.T) *Facade {
-	return &Facade{T: t, capture: captureDefault}
-}
-
-func (f *Facade) client() *http.Client {
-	client := f.Client
-	if client != nil {
-		if f.wrapped {
-			return client
-		}
-		if client == http.DefaultClient {
-			panic("!! invalid: http.DefaultClient is used")
-		}
+func New(t *testing.T, options ...func(*Facade)) *Facade {
+	f := &Facade{T: t, captureEnabled: CaptureEnabledDefault}
+	for _, opt := range options {
+		opt(f)
 	}
-
-	f.wrapped = true
-
-	if client == nil {
-		client = &http.Client{
-			Transport: http.DefaultTransport,
-			Timeout:   10 * time.Second, // xxx
-		}
+	if f.Client == nil {
+		f.Client = &http.Client{Timeout: 1 * time.Second}
 	}
-
-	if f.capture {
-		transport := &CapturedTransport{T: f.T}
-		transport.Transport = client.Transport
-		client.Transport = transport
-	}
-	f.Client = client
-	return client
+	return f
 }
 
 var noop = func() {}
-
-func (f *Facade) Capture(t *testing.T) func() {
-	if !f.capture {
-		return noop
-	}
-	t.Helper()
-
-	transport := f.client().Transport
-	internal, ok := transport.(*CapturedTransport)
-	if !ok {
-		t.Fatalf("!! Capture: something wrong, transport is not captured")
-		return noop
-	}
-	teardown := internal.Capture(t)
-	return func() {
-		f.mu.Lock()
-		defer f.mu.Unlock()
-		teardown()
-		internal.T = f.T // rollback
-	}
-}
 
 func (f *Facade) NewRequest(
 	method, url string, body io.Reader,
@@ -112,7 +68,23 @@ func (f *Facade) Do(
 		opt(a)
 	}
 
-	res, err := f.client().Do(req)
+	client := f.Client
+	if client == http.DefaultClient {
+		panic("!! invalid: http.DefaultClient is used")
+	}
+
+	// TODO: not goroutine safe
+	originalTransport := client.Transport
+	if f.captureEnabled {
+		transport := &CapturedTransport{T: f.T}
+		transport.Transport = client.Transport
+		client.Transport = transport
+	}
+	defer func() {
+		f.Client.Transport = originalTransport
+	}()
+
+	res, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("!! Do: %+v", err)
 	}
