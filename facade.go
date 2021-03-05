@@ -41,20 +41,6 @@ func New(t *testing.T, options ...func(*Facade)) *Facade {
 	return f
 }
 
-func (f *Facade) client() *http.Client {
-	client := f.Client
-	if client == http.DefaultClient {
-		panic("!! invalid: http.DefaultClient is used")
-	}
-
-	if f.captureEnabled {
-		transport := &CapturedTransport{T: f.T}
-		transport.Transport = client.Transport
-		client.Transport = transport
-	}
-	return client
-}
-
 var noop = func() {}
 
 func (f *Facade) NewRequest(
@@ -82,7 +68,22 @@ func (f *Facade) Do(
 		opt(a)
 	}
 
-	res, err := f.client().Do(req)
+	client := f.Client
+	if client == http.DefaultClient {
+		panic("!! invalid: http.DefaultClient is used")
+	}
+
+	originalTransport := client.Transport
+	if f.captureEnabled {
+		transport := &CapturedTransport{T: f.T}
+		transport.Transport = client.Transport
+		client.Transport = transport
+	}
+	defer func() {
+		f.Client.Transport = originalTransport
+	}()
+
+	res, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("!! Do: %+v", err)
 	}
