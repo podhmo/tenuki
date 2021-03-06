@@ -13,12 +13,16 @@ import (
 )
 
 type FileDumper struct {
-	i            int64
+	Counter      *int64
 	BaseDir      Dir
 	RecordWriter io.Writer
 }
 
 func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) string {
+	if d.Counter == nil {
+		n := int64(0)
+		d.Counter = &n
+	}
 	if d.RecordWriter == nil {
 		f, err := d.BaseDir.Open("records.txt")
 		// xxx: does not Close()
@@ -32,10 +36,14 @@ func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) strin
 		}
 	}
 
-	i := atomic.AddInt64(&d.i, inc)
+	i := atomic.AddInt64(d.Counter, inc)
 	filename := fmt.Sprintf("%04d%s", i, suffix)
 
-	fmt.Fprintf(d.RecordWriter, "{\"file\": %q, \"url\": %q}\r\n", filename, req.URL.String())
+	url := "/"
+	if req != nil {
+		url = req.URL.String()
+	}
+	fmt.Fprintf(d.RecordWriter, "{\"file\": %q, \"url\": %q}\r\n", filename, url)
 	return filename
 }
 
@@ -74,7 +82,9 @@ func (d *FileDumper) DumpResponse(p printer, state State, res *http.Response) er
 	}
 	defer f.Close()
 
-	d.dumpHeader(f, req)
+	if req != nil {
+		d.dumpHeader(f, req)
+	}
 	b, err := httputil.DumpResponse(res, true /* body */)
 	if err != nil {
 		return err
