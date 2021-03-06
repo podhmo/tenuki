@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/podhmo/tenuki/capture/openapistyle"
+	"github.com/podhmo/tenuki/capture/gostyle"
 )
 
 type Info interface {
@@ -24,7 +24,7 @@ func DumpRequestJSON(req *http.Request, body bool) (Info, error) {
 			}
 		}
 	}
-	info, err := openapistyle.ExtractRequestInfo(req, save)
+	info, err := gostyle.ExtractRequestInfo(req, save)
 	if err != nil {
 		return nil, fmt.Errorf("extract request info, %w", err)
 	}
@@ -66,7 +66,7 @@ func DumpResponseJSON(resp *http.Response, body bool) (Info, error) {
 		return nil, err
 	}
 
-	info, err := openapistyle.ExtractResponseInfo(resp, save)
+	info, err := gostyle.ExtractResponseInfo(resp, save)
 	if err != nil {
 		return nil, fmt.Errorf("extract response info, %w", err)
 	}
