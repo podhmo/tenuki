@@ -95,6 +95,30 @@ func (f *Facade) Do(
 	return res
 }
 
+func (f *Facade) DoHandler(
+	handler http.Handler,
+	req *http.Request,
+	options ...AssertOption,
+) *http.Response {
+	client := f.Client
+	if client == http.DefaultClient {
+		panic("!! invalid: http.DefaultClient is used")
+	}
+
+	originalTransport := f.Client.Transport
+	f.Client.Transport = &HandlerTripper{Handler: handler}
+	res := f.Do(req, options...)
+	f.Client.Transport = originalTransport
+	return res
+}
+func (f *Facade) DoHandlerFunc(
+	handler http.HandlerFunc,
+	req *http.Request,
+	options ...AssertOption,
+) *http.Response {
+	return f.DoHandler(handler, req, options...)
+}
+
 type Assertion struct {
 	StatusCode int
 	Checks     []func(t *testing.T, res *http.Response)
