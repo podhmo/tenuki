@@ -2,6 +2,7 @@ package capture
 
 import (
 	"net/http"
+	"unsafe"
 
 	"github.com/podhmo/tenuki/capture/httputil"
 )
@@ -15,7 +16,7 @@ func (d *ConsoleDumper) DumpRequest(p printer, req *http.Request) (State, error)
 		return nil, err
 	}
 
-	p.Printf("\x1b[90mrequest:\n%s\x1b[0m", string(b))
+	p.Printf("\x1b[90mrequest:\n%s\x1b[0m", *(*string)(unsafe.Pointer(&b)))
 	return nil, nil
 }
 func (d *ConsoleDumper) DumpError(p printer, state State, err error) error {
@@ -29,7 +30,7 @@ func (d *ConsoleDumper) DumpResponse(p printer, state State, res *http.Response)
 		return err
 	}
 
-	p.Printf("\x1b[90mresponse:\n%s\x1b[0m", string(b))
+	p.Printf("\x1b[90mresponse:\n%s\x1b[0m", *(*string)(unsafe.Pointer(&b)))
 	return nil
 }
 
