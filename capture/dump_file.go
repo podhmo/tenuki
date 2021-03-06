@@ -21,7 +21,7 @@ type FileManager struct {
 	RecordWriter io.Writer
 }
 
-func (m *FileManager) FileName(req *http.Request, filename string, inc int64) string {
+func (m *FileManager) FileName(req *http.Request, name string, suffix string, inc int64) string {
 	if m.RecordWriter == nil {
 		f, err := m.BaseDir.Open("RECORDS.txt")
 		// xxx: does not Close()
@@ -39,11 +39,17 @@ func (m *FileManager) FileName(req *http.Request, filename string, inc int64) st
 		n := int64(0)
 		m.Counter = &n
 	}
+	prefix := ""
 	if !m.DisableCount {
 		i := atomic.AddInt64(m.Counter, inc)
-		filename = fmt.Sprintf("%04d%s", i, filename)
+		prefix = fmt.Sprintf("%04d", i)
+	}
+	method := "GET"
+	if req != nil {
+		method = req.Method
 	}
 
+	filename := fmt.Sprintf("%s%s@%s%s", prefix, name, method, suffix)
 	url := "/"
 	if req != nil {
 		url = req.URL.String()
@@ -73,7 +79,7 @@ type FileDumper struct {
 }
 
 func (d *FileDumper) DumpRequest(p printer, req *http.Request) (State, error) {
-	filename := d.FileName(req, d.Prefix+".req", 1)
+	filename := d.FileName(req, d.Prefix,".req", 1)
 	state := fileState{request: req, FileName: filename}
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
@@ -91,7 +97,7 @@ func (d *FileDumper) DumpRequest(p printer, req *http.Request) (State, error) {
 
 func (d *FileDumper) DumpError(p printer, state State, err error) error {
 	req := state.Request()
-	filename := d.FileName(req, d.Prefix+".error", 0)
+	filename := d.FileName(req, d.Prefix,".error", 0)
 	f, _ := d.BaseDir.Open(filename)
 	d.dumpHeader(f, req)
 	fmt.Fprintf(f, "%+v\n", err)
@@ -100,7 +106,7 @@ func (d *FileDumper) DumpError(p printer, state State, err error) error {
 
 func (d *FileDumper) DumpResponse(p printer, state State, res *http.Response) error {
 	req := res.Request
-	filename := d.FileName(req, d.Prefix+".res", 0)
+	filename := d.FileName(req, d.Prefix,".res", 0)
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
 		return err
