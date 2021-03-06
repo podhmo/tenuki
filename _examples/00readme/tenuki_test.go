@@ -17,11 +17,9 @@ func Test(t *testing.T) {
 
 	f := tenuki.New(t)
 	req := f.NewRequest("GET", ts.URL+"/hello", nil)
-	res := f.Do(req)
-
-	if want, got := 200, res.StatusCode; want != got {
-		t.Errorf("status code\nwant\n\t%d\nbut\n\t%d", want, got)
-	}
+	res := f.Do(req,
+		tenuki.AssertStatus(200),
+	)
 
 	want := map[string]string{"message": "hello world"}
 	var got map[string]string
