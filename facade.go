@@ -59,6 +59,16 @@ func New(t *testing.T, options ...func(*Facade)) *Facade {
 	}
 	return f
 }
+func WithoutCapture() func(*Facade) {
+	return func(f *Facade) {
+		f.captureEnabled = false
+	}
+}
+func WithWriteFile(basedir string) func(*Facade) {
+	return func(f *Facade) {
+		f.writeFileBaseDir = basedir
+	}
+}
 
 var noop = func() {}
 
