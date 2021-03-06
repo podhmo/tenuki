@@ -15,8 +15,7 @@ var (
 	CaptureEnabledDefault   bool   = true
 	CaptureWriteFileBaseDir string = ""
 
-	CaptureCountEnabledDefault bool  = false
-	globalFileDumpCounter      int64 = 0
+	CaptureCountEnabledDefault bool = false
 )
 
 func init() {
