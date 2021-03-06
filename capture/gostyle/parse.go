@@ -99,7 +99,7 @@ func parseBody(body io.Reader, contentType string) (interface{}, error) {
 				return nil, fmt.Errorf("read body, %w", err)
 			}
 			// TODO: truncate?
-			return b.String(), nil
+			return strings.Split(b.String(), "\n"), nil
 		} else {
 			log.Printf("Content-Type=%q is not supported, so just ignored", ct)
 			return nil, nil
