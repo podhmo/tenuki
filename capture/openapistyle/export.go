@@ -15,16 +15,15 @@ type RequestInfo struct {
 	BodySize    int64  `json:"bodySize,omitempty" default:"-1"`
 
 	Paths Paths `json:"paths"`
-
-	body io.ReadCloser `json:"-"` // for interface
 }
 
-func (info RequestInfo) Body() io.ReadCloser {
-	return info.body
+// for interface
+func (info RequestInfo) Info() interface{} {
+	return nil
 }
 
 func ExtractRequestInfo(req *http.Request, body io.ReadCloser) (RequestInfo, error) {
-	info := RequestInfo{body: body}
+	info := RequestInfo{}
 
 	{
 		reqURI := req.RequestURI
@@ -53,16 +52,16 @@ func ExtractRequestInfo(req *http.Request, body io.ReadCloser) (RequestInfo, err
 }
 
 type ResponseInfo struct {
-	body io.ReadCloser `json:"-"` // for interface
 }
 
-func (info ResponseInfo) Body() io.ReadCloser {
-	return info.body
+// for interface
+func (info ResponseInfo) Info() interface{} {
+	return nil
 }
 
-func ExtractResponseInfo(resp *http.Response) ResponseInfo {
-	info := ResponseInfo{body: resp.Body}
-	return info
+func ExtractResponseInfo(resp *http.Response, body io.ReadCloser) (ResponseInfo, error) {
+	info := ResponseInfo{}
+	return info, nil
 }
 
 // Return value if nonempty, def otherwise.
