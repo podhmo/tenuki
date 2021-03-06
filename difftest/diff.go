@@ -51,3 +51,8 @@ func AssertGotAndWantBytes(t *testing.T, got interface{}, want []byte) {
 		t.Error(color.Sprintf(output))
 	}
 }
+
+func AssertGotAndWantString(t *testing.T, got interface{}, want string) {
+	t.Helper()
+	AssertGotAndWantBytes(t, got, []byte(want))
+}
