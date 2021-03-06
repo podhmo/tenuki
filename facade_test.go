@@ -2,6 +2,7 @@ package tenuki_test
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -52,6 +53,43 @@ func TestDo(t *testing.T) {
 			t.Errorf("response body\nwant\n\t%+v\nbut\n\t%+v", want, got)
 		}
 	}
+}
+
+func TestDoWithBody(t *testing.T) {
+	body := `
+{
+    "id": 1,
+    "category": {
+        "id": 1,
+        "name": ""
+    },
+    "name": "doggie",
+    "photoUrls": [
+        ""
+    ],
+    "tags": [
+        {
+            "id": 1,
+            "name": ""
+        }
+    ],
+    "status": "available"
+}`
+	echoHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		io.Copy(w, r.Body)
+		defer r.Body.Close()
+	}
+	ts := httptest.NewServer(http.HandlerFunc(echoHandler))
+	defer ts.Close()
+
+	f := tenuki.New(t)
+	req := f.NewRequest("Post", ts.URL, strings.NewReader(body))
+	req.Header.Add("Content-Type", "application/json")
+	res := f.Do(req,
+		tenuki.AssertStatus(http.StatusOK),
+	)
+	_ = res
 }
 
 func TestDoHandler(t *testing.T) {
