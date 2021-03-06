@@ -1,4 +1,4 @@
-package httputil
+package openapistyle
 
 import (
 	"fmt"
@@ -6,25 +6,22 @@ import (
 	"log"
 	"net/http"
 	"strings"
-
-	"github.com/podhmo/tenuki/capture/openapi"
 )
 
 // TODO: trim security information
-
-func extractOpenAPIPaths(req *http.Request, body io.ReadCloser) (openapi.Paths, error) {
-	r := openapi.Paths{}
-	pathItem, err := extractOpenAPIPathItem(req, body)
+func toPaths(req *http.Request, body io.ReadCloser) (Paths, error) {
+	r := Paths{}
+	pathItem, err := toPathItem(req, body)
 	if err != nil {
 		return r, fmt.Errorf("extract pathItem, %w", err)
 	}
 	r[req.URL.Path] = pathItem
 	return r, nil
 }
-func extractOpenAPIPathItem(req *http.Request, body io.ReadCloser) (openapi.PathItem, error) {
-	r := openapi.PathItem{}
+func toPathItem(req *http.Request, body io.ReadCloser) (PathItem, error) {
+	r := PathItem{}
 
-	op, err := extractOpenAPIOperation(req, body)
+	op, err := toOperation(req, body)
 	if err != nil {
 		return r, fmt.Errorf("extract operation, %w", err)
 	}
@@ -51,16 +48,19 @@ func extractOpenAPIPathItem(req *http.Request, body io.ReadCloser) (openapi.Path
 	return r, nil
 }
 
-func extractOpenAPIOperation(req *http.Request, body io.ReadCloser) (openapi.Operation, error) {
-	r := openapi.Operation{}
-	content, err := extractOpenAPIContent(req, body)
-	if err != nil {
-		return r, fmt.Errorf("extract content, %w", err)
-	}
-	r.RequestBody = &openapi.RequestBody{
-		Content: map[string]openapi.MediaType{
-			req.Header.Get("Content-Type"): content,
-		},
+func toOperation(req *http.Request, body io.ReadCloser) (Operation, error) {
+	r := Operation{}
+
+	if body != nil {
+		content, err := toContent(req, body)
+		if err != nil {
+			return r, fmt.Errorf("extract content, %w", err)
+		}
+		r.RequestBody = &RequestBody{
+			Content: map[string]MediaType{
+				req.Header.Get("Content-Type"): content,
+			},
+		}
 	}
 
 	// query, header, (path), cookie
@@ -70,7 +70,7 @@ func extractOpenAPIOperation(req *http.Request, body io.ReadCloser) (openapi.Ope
 			for i, v := range vs {
 				examples[i] = v
 			}
-			r.Parameters = append(r.Parameters, openapi.Parameter{
+			r.Parameters = append(r.Parameters, Parameter{
 				Name:     k,
 				In:       "query",
 				Examples: examples,
@@ -83,7 +83,7 @@ func extractOpenAPIOperation(req *http.Request, body io.ReadCloser) (openapi.Ope
 			for i, v := range vs {
 				examples[i] = v
 			}
-			r.Parameters = append(r.Parameters, openapi.Parameter{
+			r.Parameters = append(r.Parameters, Parameter{
 				Name:     k,
 				In:       "header",
 				Examples: examples,
@@ -92,7 +92,7 @@ func extractOpenAPIOperation(req *http.Request, body io.ReadCloser) (openapi.Ope
 	}
 	if cookies := req.Cookies(); len(cookies) > 0 {
 		for _, cookie := range cookies {
-			r.Parameters = append(r.Parameters, openapi.Parameter{
+			r.Parameters = append(r.Parameters, Parameter{
 				Name:     cookie.Name,
 				In:       "cookie",
 				Examples: []interface{}{cookie.Raw}, // invalid?
@@ -102,10 +102,10 @@ func extractOpenAPIOperation(req *http.Request, body io.ReadCloser) (openapi.Ope
 	return r, nil
 }
 
-func extractOpenAPIContent(req *http.Request, body io.ReadCloser) (openapi.MediaType, error) {
-	r := openapi.MediaType{}
+func toContent(req *http.Request, body io.ReadCloser) (MediaType, error) {
+	r := MediaType{}
 	return r, nil
 }
 
-// func extractOpenAPIOperation(req *http.Request, body io.ReadCloser) (openapi.Operation, error) {
+// func toOperation(req *http.Request, body io.ReadCloser) (Operation, error) {
 // }
