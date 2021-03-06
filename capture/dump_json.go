@@ -28,6 +28,7 @@ func (d *JSONDumper) DumpRequest(p printer, req *http.Request) (State, error) {
 	// TODO: use printer
 	enc := json.NewEncoder(os.Stderr)
 	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
 	return nil, enc.Encode(info)
 }
 func (d *JSONDumper) DumpError(p printer, state State, err error) error {
@@ -49,6 +50,7 @@ func (d *JSONDumper) DumpResponse(p printer, state State, res *http.Response) er
 	// TODO: use printer
 	enc := json.NewEncoder(os.Stderr)
 	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
 	return enc.Encode(info)
 }
 
