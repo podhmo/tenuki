@@ -2,21 +2,35 @@ package tenuki
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/podhmo/tenuki/capture"
 )
 
 var (
-	CaptureEnabledDefault bool = true
+	CaptureEnabledDefault   bool   = true
+	CaptureWriteFileBaseDir string = ""
+	globalFileDumpCounter   int64  = 0
 )
 
 func init() {
 	if ok, _ := strconv.ParseBool(os.Getenv("NOCAPTURE")); ok {
+		log.Println("CAPTURE_DISABLED is true, so deactivate tenuki.capture function")
 		CaptureEnabledDefault = false
+	}
+	if ok, _ := strconv.ParseBool(os.Getenv("CAPTURE_DISABLED")); ok {
+		log.Println("CAPTURE_DISABLED is true, so deactivate tenuki.capture function")
+		CaptureEnabledDefault = false
+	}
+	if filename := os.Getenv("CAPTURE_WRITEFILE"); filename != "" {
+		log.Println("CAPTURE_WRITEFILE is set, so activate the function writing capture output to files")
+		CaptureWriteFileBaseDir = filename
 	}
 }
 
@@ -24,14 +38,19 @@ type Facade struct {
 	T      *testing.T
 	Client *http.Client
 
-	captureEnabled bool
+	captureEnabled   bool
+	writeFileBaseDir string
 
 	extractor *ExtractFacade
 	mu        sync.Mutex
 }
 
 func New(t *testing.T, options ...func(*Facade)) *Facade {
-	f := &Facade{T: t, captureEnabled: CaptureEnabledDefault}
+	f := &Facade{
+		T:                t,
+		captureEnabled:   CaptureEnabledDefault,
+		writeFileBaseDir: CaptureWriteFileBaseDir,
+	}
 	for _, opt := range options {
 		opt(f)
 	}
@@ -76,9 +95,15 @@ func (f *Facade) Do(
 	// TODO: not goroutine safe
 	originalTransport := client.Transport
 	if f.captureEnabled {
-		transport := &CapturedTransport{T: f.T}
-		transport.Transport = client.Transport
-		client.Transport = transport
+		ct := &CapturedTransport{T: f.T}
+		if f.writeFileBaseDir != "" {
+			ct.Dumper = &capture.FileDumper{
+				BaseDir: capture.Dir(f.writeFileBaseDir),
+				Counter: &globalFileDumpCounter,
+			}
+		}
+		ct.Transport = client.Transport
+		client.Transport = ct
 	}
 	defer func() {
 		f.Client.Transport = originalTransport
