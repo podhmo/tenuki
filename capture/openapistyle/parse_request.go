@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: trim security information
-func toPaths(req *http.Request, body io.ReadCloser) (Paths, error) {
+func toPaths(req *http.Request, body io.Reader) (Paths, error) {
 	r := Paths{}
 	pathItem, err := toPathItem(req, body)
 	if err != nil {
@@ -18,7 +18,7 @@ func toPaths(req *http.Request, body io.ReadCloser) (Paths, error) {
 	r[req.URL.Path] = pathItem
 	return r, nil
 }
-func toPathItem(req *http.Request, body io.ReadCloser) (PathItem, error) {
+func toPathItem(req *http.Request, body io.Reader) (PathItem, error) {
 	r := PathItem{}
 
 	op, err := toOperation(req, body)
@@ -48,7 +48,7 @@ func toPathItem(req *http.Request, body io.ReadCloser) (PathItem, error) {
 	return r, nil
 }
 
-func toOperation(req *http.Request, body io.ReadCloser) (Operation, error) {
+func toOperation(req *http.Request, body io.Reader) (Operation, error) {
 	r := Operation{}
 
 	if body != nil {
@@ -102,10 +102,10 @@ func toOperation(req *http.Request, body io.ReadCloser) (Operation, error) {
 	return r, nil
 }
 
-func toContent(req *http.Request, body io.ReadCloser) (MediaType, error) {
+func toContent(req *http.Request, body io.Reader) (MediaType, error) {
 	r := MediaType{}
 	return r, nil
 }
 
-// func toOperation(req *http.Request, body io.ReadCloser) (Operation, error) {
+// func toOperation(req *http.Request, body io.Reader) (Operation, error) {
 // }

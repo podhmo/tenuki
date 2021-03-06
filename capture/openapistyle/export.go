@@ -22,7 +22,7 @@ func (info RequestInfo) Info() interface{} {
 	return nil
 }
 
-func ExtractRequestInfo(req *http.Request, body io.ReadCloser) (RequestInfo, error) {
+func ExtractRequestInfo(req *http.Request, body io.Reader) (interface{ Info() interface{} }, error) {
 	info := RequestInfo{}
 
 	{
@@ -59,7 +59,7 @@ func (info ResponseInfo) Info() interface{} {
 	return nil
 }
 
-func ExtractResponseInfo(resp *http.Response, body io.ReadCloser) (ResponseInfo, error) {
+func ExtractResponseInfo(resp *http.Response, body io.Reader) (interface{ Info() interface{} }, error) {
 	info := ResponseInfo{}
 	return info, nil
 }

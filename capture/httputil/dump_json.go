@@ -2,16 +2,19 @@ package httputil
 
 import (
 	"fmt"
+	"io"
 	"net/http"
-
-	"github.com/podhmo/tenuki/capture/gostyle"
 )
 
 type Info interface {
 	Info() interface{}
 }
 
-func DumpRequestJSON(req *http.Request, body bool) (Info, error) {
+func DumpRequestJSON(
+	req *http.Request,
+	body bool,
+	extractInfo func(*http.Request, io.Reader) (interface{ Info() interface{} }, error),
+) (Info, error) {
 	var err error
 	save := req.Body
 	{
@@ -24,14 +27,18 @@ func DumpRequestJSON(req *http.Request, body bool) (Info, error) {
 			}
 		}
 	}
-	info, err := gostyle.ExtractRequestInfo(req, save)
+	info, err := extractInfo(req, save)
 	if err != nil {
 		return nil, fmt.Errorf("extract request info, %w", err)
 	}
 	return info, nil
 }
 
-func DumpResponseJSON(resp *http.Response, body bool) (Info, error) {
+func DumpResponseJSON(
+	resp *http.Response,
+	body bool,
+	extractInfo func(*http.Response, io.Reader) (interface{ Info() interface{} }, error),
+) (Info, error) {
 	var err error
 	save := resp.Body
 	savecl := resp.ContentLength
@@ -66,7 +73,7 @@ func DumpResponseJSON(resp *http.Response, body bool) (Info, error) {
 		return nil, err
 	}
 
-	info, err := gostyle.ExtractResponseInfo(resp, save)
+	info, err := extractInfo(resp, save)
 	if err != nil {
 		return nil, fmt.Errorf("extract response info, %w", err)
 	}
