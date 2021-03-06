@@ -2,7 +2,6 @@ package openapistyle
 
 import (
 	"io"
-	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -85,13 +84,7 @@ func TestToPaths(t *testing.T) {
 
 func toPathsWithValidation(t *testing.T, req *http.Request, body io.Reader) Paths {
 	t.Helper()
-	var paths Paths
-	var err error
-	if body == nil {
-		paths, err = toPaths(req, nil)
-	} else {
-		paths, err = toPaths(req, ioutil.NopCloser(body))
-	}
+	paths, err := toPaths(req, body)
 	if err != nil {
 		t.Fatalf("toPath failed, %+v", err)
 	}
