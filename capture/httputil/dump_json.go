@@ -1,14 +1,14 @@
 package httputil
 
 import (
-	"io"
+	"fmt"
 	"net/http"
 
 	"github.com/podhmo/tenuki/capture/openapistyle"
 )
 
 type Info interface {
-	Body() io.ReadCloser
+	Info() interface{}
 }
 
 func DumpRequestJSON(req *http.Request, body bool) (Info, error) {
@@ -26,13 +26,12 @@ func DumpRequestJSON(req *http.Request, body bool) (Info, error) {
 	}
 	info, err := openapistyle.ExtractRequestInfo(req, save)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("extract request info, %w", err)
 	}
 	return info, nil
 }
 
 func DumpResponseJSON(resp *http.Response, body bool) (Info, error) {
-	info := openapistyle.ExtractResponseInfo(resp)
 	var err error
 	save := resp.Body
 	savecl := resp.ContentLength
@@ -52,7 +51,7 @@ func DumpResponseJSON(resp *http.Response, body bool) (Info, error) {
 		} else {
 			save, resp.Body, err = drainBody(resp.Body)
 			if err != nil {
-				return info, err
+				return nil, err
 			}
 		}
 
@@ -64,7 +63,12 @@ func DumpResponseJSON(resp *http.Response, body bool) (Info, error) {
 	}
 
 	if err != nil {
-		return info, err
+		return nil, err
+	}
+
+	info, err := openapistyle.ExtractResponseInfo(resp, save)
+	if err != nil {
+		return nil, fmt.Errorf("extract response info, %w", err)
 	}
 	return info, nil
 }
