@@ -2,6 +2,7 @@ package tenuki
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -11,12 +12,25 @@ import (
 )
 
 var (
-	CaptureEnabledDefault bool = true
+	CaptureEnabledDefault   bool   = true
+	CaptureWriteFileBaseDir string = ""
+
+	CaptureCountEnabledDefault bool  = false
+	globalFileDumpCounter      int64 = 0
 )
 
 func init() {
 	if ok, _ := strconv.ParseBool(os.Getenv("NOCAPTURE")); ok {
+		log.Println("CAPTURE_DISABLED is true, so deactivate tenuki.capture function")
 		CaptureEnabledDefault = false
+	}
+	if ok, _ := strconv.ParseBool(os.Getenv("CAPTURE_DISABLED")); ok {
+		log.Println("CAPTURE_DISABLED is true, so deactivate tenuki.capture function")
+		CaptureEnabledDefault = false
+	}
+	if filename := os.Getenv("CAPTURE_WRITEFILE"); filename != "" {
+		log.Println("CAPTURE_WRITEFILE is set, so activate the function writing capture output to files")
+		CaptureWriteFileBaseDir = filename
 	}
 }
 
@@ -24,14 +38,19 @@ type Facade struct {
 	T      *testing.T
 	Client *http.Client
 
-	captureEnabled bool
+	captureEnabled   bool
+	writeFileBaseDir string
 
 	extractor *ExtractFacade
 	mu        sync.Mutex
 }
 
 func New(t *testing.T, options ...func(*Facade)) *Facade {
-	f := &Facade{T: t, captureEnabled: CaptureEnabledDefault}
+	f := &Facade{
+		T:                t,
+		captureEnabled:   CaptureEnabledDefault,
+		writeFileBaseDir: CaptureWriteFileBaseDir,
+	}
 	for _, opt := range options {
 		opt(f)
 	}
@@ -39,6 +58,16 @@ func New(t *testing.T, options ...func(*Facade)) *Facade {
 		f.Client = &http.Client{Timeout: 1 * time.Second}
 	}
 	return f
+}
+func WithoutCapture() func(*Facade) {
+	return func(f *Facade) {
+		f.captureEnabled = false
+	}
+}
+func WithWriteFile(basedir string) func(*Facade) {
+	return func(f *Facade) {
+		f.writeFileBaseDir = basedir
+	}
 }
 
 var noop = func() {}
@@ -76,9 +105,9 @@ func (f *Facade) Do(
 	// TODO: not goroutine safe
 	originalTransport := client.Transport
 	if f.captureEnabled {
-		transport := &CapturedTransport{T: f.T}
-		transport.Transport = client.Transport
-		client.Transport = transport
+		ct := NewCaptureTransportWithDefault(f.T, f.writeFileBaseDir)
+		ct.Transport = client.Transport
+		client.Transport = ct
 	}
 	defer func() {
 		f.Client.Transport = originalTransport

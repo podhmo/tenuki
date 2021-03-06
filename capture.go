@@ -9,6 +9,19 @@ import (
 	"github.com/podhmo/tenuki/capture"
 )
 
+func NewCaptureTransportWithDefault(t *testing.T, basedir string) *CapturedTransport {
+	ct := &CapturedTransport{T: t}
+	if basedir != "" {
+		ct.Dumper = &capture.FileDumper{
+			BaseDir:      capture.Dir(basedir),
+			DisableCount: !CaptureCountEnabledDefault,
+			Counter:      &globalFileDumpCounter,
+			Prefix:       t.Name(),
+		}
+	}
+	return ct
+}
+
 type CapturedTransport struct {
 	capture.CapturedTransport
 	T *testing.T
