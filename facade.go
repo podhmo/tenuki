@@ -9,8 +9,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/podhmo/tenuki/capture"
 )
 
 var (
@@ -107,15 +105,7 @@ func (f *Facade) Do(
 	// TODO: not goroutine safe
 	originalTransport := client.Transport
 	if f.captureEnabled {
-		ct := &CapturedTransport{T: f.T}
-		if f.writeFileBaseDir != "" {
-			ct.Dumper = &capture.FileDumper{
-				BaseDir:      capture.Dir(f.writeFileBaseDir),
-				DisableCount: !CaptureCountEnabledDefault,
-				Counter:      &globalFileDumpCounter,
-				Prefix:       t.Name(),
-			}
-		}
+		ct := NewCaptureTransportWithDefault(f.T, f.writeFileBaseDir)
 		ct.Transport = client.Transport
 		client.Transport = ct
 	}
