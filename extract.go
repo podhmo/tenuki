@@ -45,8 +45,8 @@ func (f *ExtractFacade) buffer(res *http.Response) *bytes.Buffer {
 	t := f.T
 	t.Helper()
 
-	var b bytes.Buffer
-	if _, err := io.Copy(&b, res.Body); err != nil {
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(res.Body); err != nil {
 		t.Fatalf("!! buffer: %+v", err)
 	}
 	defer func() {
@@ -55,7 +55,7 @@ func (f *ExtractFacade) buffer(res *http.Response) *bytes.Buffer {
 		}
 	}()
 
-	cache = b.Bytes()
+	cache = buf.Bytes()
 	f.cache[k] = cache
 	return bytes.NewBuffer(cache)
 }
