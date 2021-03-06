@@ -74,6 +74,11 @@ func (f *ExtractFacade) Bytes(res *http.Response) []byte {
 	t.Helper()
 	return f.buffer(res).Bytes()
 }
+func (f *ExtractFacade) String(res *http.Response) string {
+	t := f.T
+	t.Helper()
+	return f.buffer(res).String()
+}
 
 func DecodeJSON(r io.Reader, ob interface{}) error {
 	defer io.Copy(ioutil.Discard, r)
