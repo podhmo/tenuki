@@ -1,0 +1,2 @@
+- https://github.com/ahmadnassri/har-spec/blob/master/versions/1.3.md
+- https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.1.0.md

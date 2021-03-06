@@ -1,4 +1,4 @@
-package openapi
+package openapistyle
 
 // subset of openAPI definition
 
