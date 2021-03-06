@@ -61,21 +61,14 @@ func DumpResponseJSON(
 				return nil, err
 			}
 		}
-
-		if err == errNoBody {
-			err = nil
-		}
-		resp.Body = save
-		resp.ContentLength = savecl
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	info, err := extractInfo(resp, save)
+	info, err := extractInfo(resp, resp.Body)
+	resp.Body = save
+	resp.ContentLength = savecl
 	if err != nil {
 		return nil, fmt.Errorf("extract response info, %w", err)
 	}
+
 	return info, nil
 }
