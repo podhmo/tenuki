@@ -1,5 +1,5 @@
 test:
-	go test
+	go test -v
 .PHONY: test
 
 test-with-writefile:

@@ -6,10 +6,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"path/filepath"
 	"sync/atomic"
+
+	"github.com/podhmo/tenuki/capture/httputil"
 )
 
 type FileManager struct {
