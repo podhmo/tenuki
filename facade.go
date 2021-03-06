@@ -69,19 +69,12 @@ func WithWriteFile(basedir string) func(*Facade) {
 	}
 }
 
-var noop = func() {}
-
 func (f *Facade) NewRequest(
 	method, url string, body io.Reader,
 ) *http.Request {
 	t := f.T
 	t.Helper()
-
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		t.Fatalf("!! NewRequest: %+v", err)
-	}
-	return req
+	return NewRequest(t, method, url, body)
 }
 
 func (f *Facade) Do(
@@ -169,3 +162,16 @@ func NewAssertion() *Assertion {
 }
 
 type AssertOption func(*Assertion)
+
+func NewRequest(
+	t *testing.T,
+	method, url string, body io.Reader,
+) *http.Request {
+	t.Helper()
+
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		t.Fatalf("!! NewRequest: %+v", err)
+	}
+	return req
+}
