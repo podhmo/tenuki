@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"os"
+	"strings"
 
 	"github.com/podhmo/tenuki/capture/gostyle"
 	"github.com/podhmo/tenuki/capture/httputil"
@@ -25,11 +25,15 @@ func (d *JSONDumper) DumpRequest(p printer, req *http.Request) (State, error) {
 		return nil, err
 	}
 
-	// TODO: use printer
-	enc := json.NewEncoder(os.Stderr)
+	var b strings.Builder
+	enc := json.NewEncoder(&b)
 	enc.SetIndent("", "  ")
 	enc.SetEscapeHTML(false)
-	return nil, enc.Encode(info)
+	if err := enc.Encode(info); err != nil {
+		return nil, err
+	}
+	p.Printf("\x1b[90mrequest:\n%s\x1b[0m", b.String())
+	return nil, nil
 }
 func (d *JSONDumper) DumpError(p printer, state State, err error) error {
 	p.Printf("\x1b[90merror:\n%+v\x1b[0m", err)
@@ -47,11 +51,15 @@ func (d *JSONDumper) DumpResponse(p printer, state State, res *http.Response) er
 		return err
 	}
 
-	// TODO: use printer
-	enc := json.NewEncoder(os.Stderr)
+	var b strings.Builder
+	enc := json.NewEncoder(&b)
 	enc.SetIndent("", "  ")
 	enc.SetEscapeHTML(false)
-	return enc.Encode(info)
+	if err := enc.Encode(info); err != nil {
+		return err
+	}
+	p.Printf("\x1b[90mresponse:\n%s\x1b[0m", b.String())
+	return nil
 }
 
 var _ Dumper = &JSONDumper{}
