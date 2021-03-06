@@ -79,7 +79,7 @@ type FileDumper struct {
 }
 
 func (d *FileDumper) DumpRequest(p printer, req *http.Request) (State, error) {
-	filename := d.FileName(req, d.Prefix,".req", 1)
+	filename := d.FileName(req, d.Prefix, ".req", 1)
 	state := fileState{request: req, FileName: filename}
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
@@ -97,7 +97,7 @@ func (d *FileDumper) DumpRequest(p printer, req *http.Request) (State, error) {
 
 func (d *FileDumper) DumpError(p printer, state State, err error) error {
 	req := state.Request()
-	filename := d.FileName(req, d.Prefix,".error", 0)
+	filename := d.FileName(req, d.Prefix, ".error", 0)
 	f, _ := d.BaseDir.Open(filename)
 	d.dumpHeader(f, req)
 	fmt.Fprintf(f, "%+v\n", err)
@@ -106,7 +106,7 @@ func (d *FileDumper) DumpError(p printer, state State, err error) error {
 
 func (d *FileDumper) DumpResponse(p printer, state State, res *http.Response) error {
 	req := res.Request
-	filename := d.FileName(req, d.Prefix,".res", 0)
+	filename := d.FileName(req, d.Prefix, ".res", 0)
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
 		return err
