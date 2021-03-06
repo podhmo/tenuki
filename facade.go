@@ -16,7 +16,9 @@ import (
 var (
 	CaptureEnabledDefault   bool   = true
 	CaptureWriteFileBaseDir string = ""
-	globalFileDumpCounter   int64  = 0
+
+	CaptureCountEnabledDefault bool  = false
+	globalFileDumpCounter      int64 = 0
 )
 
 func init() {
@@ -108,8 +110,10 @@ func (f *Facade) Do(
 		ct := &CapturedTransport{T: f.T}
 		if f.writeFileBaseDir != "" {
 			ct.Dumper = &capture.FileDumper{
-				BaseDir: capture.Dir(f.writeFileBaseDir),
-				Counter: &globalFileDumpCounter,
+				BaseDir:      capture.Dir(f.writeFileBaseDir),
+				DisableCount: !CaptureCountEnabledDefault,
+				Counter:      &globalFileDumpCounter,
+				Prefix:       t.Name(),
 			}
 		}
 		ct.Transport = client.Transport

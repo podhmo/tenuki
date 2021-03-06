@@ -13,16 +13,16 @@ import (
 )
 
 type FileDumper struct {
+	BaseDir Dir
+
 	Counter      *int64
-	BaseDir      Dir
+	DisableCount bool
+
 	RecordWriter io.Writer
+	Prefix       string
 }
 
 func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) string {
-	if d.Counter == nil {
-		n := int64(0)
-		d.Counter = &n
-	}
 	if d.RecordWriter == nil {
 		f, err := d.BaseDir.Open("records.txt")
 		// xxx: does not Close()
@@ -36,8 +36,16 @@ func (d *FileDumper) FileName(req *http.Request, suffix string, inc int64) strin
 		}
 	}
 
-	i := atomic.AddInt64(d.Counter, inc)
-	filename := fmt.Sprintf("%04d%s", i, suffix)
+	prefix := d.Prefix
+	if d.Counter == nil {
+		n := int64(0)
+		d.Counter = &n
+	}
+	if !d.DisableCount {
+		i := atomic.AddInt64(d.Counter, inc)
+		prefix = fmt.Sprintf("%04d%s", i, prefix)
+	}
+	filename := prefix + suffix
 
 	url := "/"
 	if req != nil {
