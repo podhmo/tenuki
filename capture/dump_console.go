@@ -2,7 +2,8 @@ package capture
 
 import (
 	"net/http"
-	"net/http/httputil"
+
+	"github.com/podhmo/tenuki/capture/httputil"
 )
 
 type ConsoleDumper struct {
