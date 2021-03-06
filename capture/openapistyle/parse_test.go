@@ -21,7 +21,7 @@ func TestToPaths(t *testing.T) {
 		q.Add("escaped", `He says "I'm not robot!", but ...`)
 		req.URL.RawQuery = q.Encode()
 		got := toPathsWithValidation(t, req, nil)
-		want := []byte(`
+		want := `
 	{
 	  "/xxx/yyy": {
 	    "get": {
@@ -52,8 +52,8 @@ func TestToPaths(t *testing.T) {
 	    }
 	  }
 	}
-	`)
-		difftest.AssertGotAndWantBytes(t, got, want)
+	`
+		difftest.AssertGotAndWantString(t, got, want)
 	})
 
 	t.Run("header", func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestToPaths(t *testing.T) {
 		req, _ := http.NewRequest("GET", url+path, nil)
 		req.Header.Set("Authorization", "Bearer access-token")
 		got := toPathsWithValidation(t, req, nil)
-		want := []byte(`
+		want := `
 {
   "/xxx/yyy": {
     "get": {
@@ -77,8 +77,8 @@ func TestToPaths(t *testing.T) {
     }
   }
 }
-`)
-		difftest.AssertGotAndWantBytes(t, got, want)
+`
+		difftest.AssertGotAndWantString(t, got, want)
 	})
 }
 

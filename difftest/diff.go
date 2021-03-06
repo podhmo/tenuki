@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"unsafe"
 
 	"github.com/gookit/color"
 	"github.com/shibukawa/cdiff"
@@ -29,7 +30,7 @@ func AssertGotAndWantBytes(t *testing.T, got interface{}, want []byte) {
 		if err != nil {
 			t.Fatalf("marshal,unmarshal,marshal for got, %+v, %+v", got, err)
 		}
-		gotString = strings.TrimSpace(string(b2))
+		gotString = strings.TrimSpace(*(*string)(unsafe.Pointer(&b2)))
 	}
 	{
 		var v interface{}
@@ -40,7 +41,7 @@ func AssertGotAndWantBytes(t *testing.T, got interface{}, want []byte) {
 		if err != nil {
 			t.Fatalf("unmarshal,marshal for want, %+v, %+v", string(want), err)
 		}
-		wantString = strings.TrimSpace(string(b2))
+		wantString = strings.TrimSpace(*(*string)(unsafe.Pointer(&b2)))
 	}
 
 	diff := cdiff.Diff(gotString, wantString, cdiff.WordByWord)
@@ -48,7 +49,7 @@ func AssertGotAndWantBytes(t *testing.T, got interface{}, want []byte) {
 
 	// first 4lines is header
 	if len(strings.SplitAfterN(output, "\n", 5)) >= 5 {
-		t.Error(color.Sprintf(output))
+		t.Errorf(color.Sprintf(output))
 	}
 }
 
