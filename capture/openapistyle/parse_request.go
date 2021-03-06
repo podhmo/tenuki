@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"strings"
 )
@@ -56,9 +57,14 @@ func toOperation(req *http.Request, body io.Reader) (Operation, error) {
 		if err != nil {
 			return r, fmt.Errorf("extract content, %w", err)
 		}
+		ct, _, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
+		if err != nil {
+			log.Printf("parse content type, %+v", err)
+			ct = strings.ToLower(req.Header.Get("Content-Type"))
+		}
 		r.RequestBody = &RequestBody{
 			Content: map[string]MediaType{
-				req.Header.Get("Content-Type"): content,
+				ct: content,
 			},
 		}
 	}

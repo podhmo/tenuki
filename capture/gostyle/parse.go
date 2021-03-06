@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"reflect"
 	"strings"
@@ -26,7 +27,11 @@ func parseRequest(req *http.Request, body io.Reader) (Info, error) {
 	})
 
 	if body != nil {
-		ct := strings.ToLower(req.Header.Get("Content-Type"))
+		ct, _, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
+		if err != nil {
+			log.Printf("parse content type, %+v", err)
+			ct = strings.ToLower(req.Header.Get("Content-Type"))
+		}
 		body, err := parseBody(body, ct)
 		if err != nil {
 			return info, fmt.Errorf("parse body, %w", err)
@@ -44,7 +49,11 @@ func parseResponse(resp *http.Response, body io.Reader) (Info, error) {
 	})
 
 	if body != nil {
-		ct := strings.ToLower(resp.Header.Get("Content-Type"))
+		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
+		if err != nil {
+			log.Printf("parse content type, %+v", err)
+			ct = strings.ToLower(resp.Header.Get("Content-Type"))
+		}
 		body, err := parseBody(body, ct)
 		if err != nil {
 			return info, fmt.Errorf("parse body, %w", err)
