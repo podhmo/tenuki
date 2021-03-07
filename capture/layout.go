@@ -4,9 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/podhmo/tenuki/capture/gostyle"
 	"github.com/podhmo/tenuki/capture/httputil"
-	"github.com/podhmo/tenuki/capture/openapistyle"
 )
 
 type Layout struct {
@@ -18,39 +16,53 @@ type Layout struct {
 	}
 }
 
-type State interface {
-	Encode() ([]byte, error)
-	Emit(w io.WriteCloser) error
+type HTTPutilDumpRequestFunc func(req *http.Request, body bool) ([]byte, error)
+
+func (f HTTPutilDumpRequestFunc) Extract(req *http.Request) (State, error) {
+	b, err := f(req, true /* body */)
+	if err != nil {
+		return nil, err
+	}
+	return bytesLazy(b), nil
 }
 
-var (
-	TextLayout = &Layout{
-		Request:  HTTPutilDumpRequestFunc(httputil.DumpRequestOut),
-		Response: HTTPutilDumpResponseFunc(httputil.DumpResponse),
-	}
-	JSONLayout = &Layout{
-		Request: &JSONDumpRequestFuncWithStyle{
-			Dump:  httputil.DumpRequestJSON,
-			Style: gostyle.ExtractRequestInfo,
-		},
-		Response: &JSONDumpResponseFuncWithStyle{
-			Dump:  httputil.DumpResponseJSON,
-			Style: gostyle.ExtractResponseInfo,
-		},
-	}
-	OpenAPILayout = &Layout{
-		Request: &JSONDumpRequestFuncWithStyle{
-			Dump:  httputil.DumpRequestJSON,
-			Style: openapistyle.ExtractRequestInfo,
-		},
-		Response: &JSONDumpResponseFuncWithStyle{
-			Dump:  httputil.DumpResponseJSON,
-			Style: openapistyle.ExtractResponseInfo,
-		},
-	}
-)
+type HTTPutilDumpResponseFunc func(resp *http.Response, body bool) ([]byte, error)
 
-// default setting
-var (
-	DefaultLayout = TextLayout
-)
+func (f HTTPutilDumpResponseFunc) Extract(resp *http.Response) (State, error) {
+	b, err := f(resp, true /* body */)
+	if err != nil {
+		return nil, err
+	}
+	return bytesLazy(b), nil
+}
+
+// for json output
+type JSONDumpRequestFuncWithStyle struct {
+	Dump func(
+		req *http.Request,
+		body bool,
+		extractInfo func(*http.Request, io.Reader) (interface{ Info() interface{} }, error)) (*httputil.JSONState, error)
+	Style func(
+		*http.Request,
+		io.Reader,
+	) (interface{ Info() interface{} }, error)
+}
+
+func (f *JSONDumpRequestFuncWithStyle) Extract(req *http.Request) (State, error) {
+	return f.Dump(req, true /* body */, f.Style)
+}
+
+type JSONDumpResponseFuncWithStyle struct {
+	Dump func(
+		req *http.Response,
+		body bool,
+		extractInfo func(*http.Response, io.Reader) (interface{ Info() interface{} }, error)) (*httputil.JSONState, error)
+	Style func(
+		*http.Response,
+		io.Reader,
+	) (interface{ Info() interface{} }, error)
+}
+
+func (f *JSONDumpResponseFuncWithStyle) Extract(req *http.Response) (State, error) {
+	return f.Dump(req, true /* body */, f.Style)
+}
