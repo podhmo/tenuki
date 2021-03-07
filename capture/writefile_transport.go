@@ -72,56 +72,73 @@ func (d Dir) Open(filename string) (io.WriteCloser, error) {
 	return os.Create(fullname)
 }
 
-type FileDumper struct {
+type WriteFileTransport struct {
+	Transport http.RoundTripper
 	*FileManager
 	Layout *Layout
 	Prefix string
 }
 
-func (d *FileDumper) DumpRequest(p printer, req *http.Request) (State, error) {
-	filename := d.FileName(req, d.Prefix, ".req", 1)
-	state := fileState{request: req, FileName: filename}
-	f, err := d.BaseDir.Open(filename)
+func (wt *WriteFileTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	transport := wt.Transport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+	err := wt.DumpRequest(req)
 	if err != nil {
-		return state, err
+		return nil, err
+	}
+	res, err := transport.RoundTrip(req)
+	if err != nil {
+		return nil, wt.DumpError(req, err)
+	}
+	if err := wt.DumpResponse(req, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (wt *WriteFileTransport) DumpRequest(req *http.Request) error {
+	filename := wt.FileName(req, wt.Prefix, ".req", 1)
+	f, err := wt.BaseDir.Open(filename)
+	if err != nil {
+		return err
 	}
 	defer f.Close()
 
-	layout := d.Layout
+	layout := wt.Layout
 	if layout == nil {
 		layout = DefaultLayout
 	}
 	b, err := layout.Request.Extract(req)
 	if err != nil {
-		return state, err
+		return err
 	}
 
 	f.Write(b)
-	return state, nil
+	return nil
 }
 
-func (d *FileDumper) DumpError(p printer, state State, err error) error {
-	req := state.Request()
-	filename := d.FileName(req, d.Prefix, ".error", 0)
-	f, _ := d.BaseDir.Open(filename)
-	d.dumpHeader(f, req)
+func (wt *WriteFileTransport) DumpError(req *http.Request, err error) error {
+	filename := wt.FileName(req, wt.Prefix, ".error", 0)
+	f, _ := wt.BaseDir.Open(filename)
+	wt.dumpHeader(f, req)
 	fmt.Fprintf(f, "%+v\n", err)
 	return err
 }
 
-func (d *FileDumper) DumpResponse(p printer, state State, res *http.Response) error {
-	req := state.Request()
-	filename := d.FileName(req, d.Prefix, ".res", 0)
-	f, err := d.BaseDir.Open(filename)
+func (wt *WriteFileTransport) DumpResponse(req *http.Request, res *http.Response) error {
+	filename := wt.FileName(req, wt.Prefix, ".res", 0)
+	f, err := wt.BaseDir.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	if req != nil {
-		d.dumpHeader(f, req)
+		wt.dumpHeader(f, req)
 	}
-	layout := d.Layout
+	layout := wt.Layout
 	if layout == nil {
 		layout = DefaultLayout
 	}
@@ -130,7 +147,7 @@ func (d *FileDumper) DumpResponse(p printer, state State, res *http.Response) er
 	return nil
 }
 
-func (d *FileDumper) dumpHeader(w io.Writer, req *http.Request) {
+func (wt *WriteFileTransport) dumpHeader(w io.Writer, req *http.Request) {
 	reqURI := req.RequestURI
 	if reqURI == "" {
 		reqURI = req.URL.RequestURI()
@@ -142,14 +159,3 @@ func (d *FileDumper) dumpHeader(w io.Writer, req *http.Request) {
 	fmt.Fprintf(w, "%s %s HTTP/%d.%d\r\n", method,
 		reqURI, req.ProtoMajor, req.ProtoMinor)
 }
-
-type fileState struct {
-	request  *http.Request
-	FileName string
-}
-
-func (s fileState) Request() *http.Request {
-	return s.request
-}
-
-var _ Dumper = &FileDumper{}
