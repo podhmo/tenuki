@@ -1,6 +1,8 @@
 package httputil
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +16,7 @@ func DumpRequestJSON(
 	req *http.Request,
 	body bool,
 	extractInfo func(*http.Request, io.Reader) (interface{ Info() interface{} }, error),
-) (Info, error) {
+) ([]byte, error) {
 	var err error
 	save := req.Body
 	{
@@ -31,14 +33,21 @@ func DumpRequestJSON(
 	if err != nil {
 		return nil, fmt.Errorf("extract request info, %w", err)
 	}
-	return info, nil
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(info); err != nil {
+		return nil, fmt.Errorf("encode json, %w", err)
+	}
+	return b.Bytes(), nil
 }
 
 func DumpResponseJSON(
 	resp *http.Response,
 	body bool,
 	extractInfo func(*http.Response, io.Reader) (interface{ Info() interface{} }, error),
-) (Info, error) {
+) ([]byte, error) {
 	var err error
 	save := resp.Body
 	savecl := resp.ContentLength
@@ -70,5 +79,12 @@ func DumpResponseJSON(
 		return nil, fmt.Errorf("extract response info, %w", err)
 	}
 
-	return info, nil
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(info); err != nil {
+		return nil, fmt.Errorf("encode json, %w", err)
+	}
+	return b.Bytes(), nil
 }
