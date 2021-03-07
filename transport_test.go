@@ -14,7 +14,7 @@ func TestHandlerRoundTripper(t *testing.T) {
 	})
 
 	f := tenuki.New(t)
-	req := f.NewRequest("GET", "http:", nil)
+	req := f.NewRequest("GET", "", nil)
 
 	q := req.URL.Query()
 	q.Add("suffix", " !!")

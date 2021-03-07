@@ -74,6 +74,9 @@ func (f *Facade) NewRequest(
 ) *http.Request {
 	t := f.T
 	t.Helper()
+	if url == "" {
+		url = "http://example.net"
+	}
 	return NewRequest(t, method, url, body)
 }
 
