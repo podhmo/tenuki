@@ -6,6 +6,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -71,7 +72,13 @@ func toOperation(req *http.Request, body io.Reader) (Operation, error) {
 
 	// query, header, (path), cookie
 	if q := req.URL.Query(); q != nil {
-		for k, vs := range q {
+		keys := make([]string, 0, len(q))
+		for k := range q {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			vs := q[k]
 			examples := make([]interface{}, len(vs))
 			for i, v := range vs {
 				examples[i] = v
@@ -84,7 +91,14 @@ func toOperation(req *http.Request, body io.Reader) (Operation, error) {
 		}
 	}
 	if len(req.Header) > 0 {
-		for k, vs := range req.Header {
+		keys := make([]string, 0, len(req.Header))
+		for k := range req.Header {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			vs := req.Header[k]
 			examples := make([]interface{}, len(vs))
 			for i, v := range vs {
 				examples[i] = v
