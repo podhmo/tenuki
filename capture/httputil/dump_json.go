@@ -26,8 +26,7 @@ func (s *JSONState) Encode() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (s *JSONState) Emit(f io.WriteCloser) error {
-	defer f.Close()
+func (s *JSONState) Emit(f io.Writer) error {
 	b, err := s.Encode()
 	if err != nil {
 		return err

@@ -34,7 +34,7 @@ func (f HTTPutilDumpResponseFunc) Extract(resp *http.Response, s style.State) (s
 	if err != nil {
 		return nil, err
 	}
-	return &bytesState{b: b}, nil
+	return &keepPrevState{prev: s, this: &bytesState{b: b}}, nil
 }
 
 // for json output

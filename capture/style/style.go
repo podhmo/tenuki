@@ -13,5 +13,5 @@ type State interface {
 	Info() Info
 
 	Encode() ([]byte, error)
-	Emit(w io.WriteCloser) error
+	Emit(w io.Writer) error
 }

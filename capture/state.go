@@ -10,6 +10,30 @@ import (
 )
 
 // for text output
+type keepPrevState struct {
+	prev style.State
+	this style.State
+}
+
+func (s *keepPrevState) Encode() ([]byte, error) {
+	// the Assumption that keep's Encode() is already called.
+	return s.this.Encode()
+}
+func (s *keepPrevState) Info() style.Info {
+	return s.this.Info()
+}
+func (s *keepPrevState) Emit(w io.Writer) error {
+	// acting as commit like function, so emitting all states.
+	if err := s.prev.Emit(w); err != nil {
+		return fmt.Errorf("prev emit %w", err)
+	}
+	fmt.Fprint(w, "\n----------------------------------------\n\n")
+	if err := s.this.Emit(w); err != nil {
+		return fmt.Errorf("this emit %w", err)
+	}
+	return nil
+}
+
 type bytesState struct {
 	req *http.Request
 	b   []byte
@@ -18,11 +42,10 @@ type bytesState struct {
 func (s *bytesState) Encode() ([]byte, error) {
 	return s.b, nil
 }
-func (s *bytesState) Emit(w io.WriteCloser) error {
+func (s *bytesState) Emit(w io.Writer) error {
 	if _, err := w.Write(s.b); err != nil {
 		return err
 	}
-	defer w.Close()
 	return nil
 }
 func (s *bytesState) Info() style.Info {
