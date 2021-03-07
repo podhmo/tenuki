@@ -110,7 +110,7 @@ func (d *FileDumper) DumpError(p printer, state State, err error) error {
 }
 
 func (d *FileDumper) DumpResponse(p printer, state State, res *http.Response) error {
-	req := res.Request
+	req := state.Request()
 	filename := d.FileName(req, d.Prefix, ".res", 0)
 	f, err := d.BaseDir.Open(filename)
 	if err != nil {
