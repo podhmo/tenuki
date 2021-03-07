@@ -12,71 +12,6 @@ import (
 	"sync/atomic"
 )
 
-type FileManager struct {
-	BaseDir Dir
-
-	Counter      *int64
-	DisableCount bool
-
-	RecordWriter io.Writer
-}
-
-func (m *FileManager) FileName(req *http.Request, name string, suffix string, inc int64) string {
-	if strings.Contains(name, "/") {
-		name = strings.ReplaceAll(name, "/", "__")
-	}
-
-	if m.RecordWriter == nil {
-		f, err := m.BaseDir.Open("RECORDS.txt")
-		// xxx: does not Close()
-
-		m.RecordWriter = f
-		if err != nil {
-			if err != nil {
-				log.Printf("create RECORDS.txt failured: %+v", err)
-			}
-			m.RecordWriter = ioutil.Discard
-		}
-	}
-
-	if m.Counter == nil {
-		n := int64(0)
-		m.Counter = &n
-	}
-	prefix := ""
-	if !m.DisableCount {
-		i := atomic.AddInt64(m.Counter, inc)
-		prefix = fmt.Sprintf("%04d", i)
-	}
-	method := "GET"
-	if req != nil {
-		method = req.Method
-	}
-
-	filename := fmt.Sprintf("%s%s@%s%s", prefix, name, method, suffix)
-	url := "/"
-	if req != nil {
-		url = req.URL.String()
-	}
-	fmt.Fprintf(m.RecordWriter, "{\"file\": %q, \"url\": %q}\r\n", filename, url)
-	return filename
-}
-
-type Dir string
-
-func (d Dir) Open(filename string) (io.WriteCloser, error) {
-	dir := string(d)
-	if dir != "" {
-		if err := os.MkdirAll(dir, 0744); err != nil {
-			return nil, err
-		}
-	}
-
-	fullname := filepath.Join(dir, filename)
-	log.Println("\ttrace to", fullname)
-	return os.Create(fullname)
-}
-
 type WriteFileTransport struct {
 	Transport http.RoundTripper
 	*FileManager
@@ -165,4 +100,69 @@ func (wt *WriteFileTransport) dumpHeader(w io.Writer, req *http.Request) {
 	}
 	fmt.Fprintf(w, "%s %s HTTP/%d.%d\r\n", method,
 		reqURI, req.ProtoMajor, req.ProtoMinor)
+}
+
+type FileManager struct {
+	BaseDir Dir
+
+	Counter      *int64
+	DisableCount bool
+
+	RecordWriter io.Writer
+}
+
+func (m *FileManager) FileName(req *http.Request, name string, suffix string, inc int64) string {
+	if strings.Contains(name, "/") {
+		name = strings.ReplaceAll(name, "/", "__")
+	}
+
+	if m.RecordWriter == nil {
+		f, err := m.BaseDir.Open("RECORDS.txt")
+		// xxx: does not Close()
+
+		m.RecordWriter = f
+		if err != nil {
+			if err != nil {
+				log.Printf("create RECORDS.txt failured: %+v", err)
+			}
+			m.RecordWriter = ioutil.Discard
+		}
+	}
+
+	if m.Counter == nil {
+		n := int64(0)
+		m.Counter = &n
+	}
+	prefix := ""
+	if !m.DisableCount {
+		i := atomic.AddInt64(m.Counter, inc)
+		prefix = fmt.Sprintf("%04d", i)
+	}
+	method := "GET"
+	if req != nil {
+		method = req.Method
+	}
+
+	filename := fmt.Sprintf("%s%s@%s%s", prefix, name, method, suffix)
+	url := "/"
+	if req != nil {
+		url = req.URL.String()
+	}
+	fmt.Fprintf(m.RecordWriter, "{\"file\": %q, \"url\": %q}\r\n", filename, url)
+	return filename
+}
+
+type Dir string
+
+func (d Dir) Open(filename string) (io.WriteCloser, error) {
+	dir := string(d)
+	if dir != "" {
+		if err := os.MkdirAll(dir, 0744); err != nil {
+			return nil, err
+		}
+	}
+
+	fullname := filepath.Join(dir, filename)
+	log.Println("\ttrace to", fullname)
+	return os.Create(fullname)
 }
