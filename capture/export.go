@@ -9,10 +9,6 @@ import (
 )
 
 type CapturedTransport struct {
-	Transport http.RoundTripper
-	Printer   printer
-
-	Dumper Dumper
 }
 
 func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -39,17 +35,8 @@ func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error
 	return res, nil
 }
 
-type printer interface {
-	Printf(fmt string, args ...interface{})
-}
-
 type State interface {
 	Request() *http.Request
-}
-type Dumper interface {
-	DumpRequest(p printer, req *http.Request) (State, error)
-	DumpResponse(p printer, state State, res *http.Response) error
-	DumpError(p printer, state State, err error) error
 }
 
 type Layout struct {
