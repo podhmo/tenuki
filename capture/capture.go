@@ -2,38 +2,10 @@ package capture
 
 import (
 	"net/http"
+
+	"github.com/podhmo/tenuki/capture/gostyle"
+	"github.com/podhmo/tenuki/capture/httputil"
 )
-
-type CapturedTransport struct {
-	Transport http.RoundTripper
-	Printer   printer
-
-	Dumper Dumper
-}
-
-func (ct *CapturedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	transport := ct.Transport
-	if transport == nil {
-		transport = http.DefaultTransport
-	}
-	dumper := ct.Dumper
-	if dumper == nil {
-		dumper = DefaultDumper
-	}
-
-	s, err := dumper.DumpRequest(ct.Printer, req)
-	if err != nil {
-		return nil, err
-	}
-	res, err := transport.RoundTrip(req)
-	if err != nil {
-		return nil, dumper.DumpError(ct.Printer, s, err)
-	}
-	if err := dumper.DumpResponse(ct.Printer, s, res); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
 
 type printer interface {
 	Printf(fmt string, args ...interface{})
@@ -48,4 +20,34 @@ type Dumper interface {
 	DumpError(p printer, state State, err error) error
 }
 
-var DefaultDumper Dumper = &ConsoleDumper{}
+type Layout struct {
+	Request interface {
+		Extract(*http.Request) ([]byte, error)
+	}
+	Response interface {
+		Extract(*http.Response) ([]byte, error)
+	}
+}
+
+var (
+	TextLayout = &Layout{
+		Request:  HTTPutilDumpRequestFunc(httputil.DumpRequestOut),
+		Response: HTTPutilDumpResponseFunc(httputil.DumpResponse),
+	}
+	JSONLayout = &Layout{
+		Request: &JSONDumpRequestFuncWithStyle{
+			Dump:  httputil.DumpRequestJSON,
+			Style: gostyle.ExtractRequestInfo,
+		},
+		Response: &JSONDumpResponseFuncWithStyle{
+			Dump:  httputil.DumpResponseJSON,
+			Style: gostyle.ExtractResponseInfo,
+		},
+	}
+)
+
+// default setting
+var (
+	DefaultDumper  Dumper = &ConsoleDumper{}
+	DefaultLayout        = TextLayout
+)

@@ -35,7 +35,7 @@ func getFileManagerWithDefault(basedir string) *capture.FileManager {
 
 func NewCaptureTransportWithDefault(t *testing.T, basedir string) *CapturedTransport {
 	ct := &CapturedTransport{T: t}
-	ct.Dumper = &capture.JSONDumper{}
+	// ct.Dumper = &capture.ConsoleDumper{Layout: capture.JSONLayout}
 	if basedir != "" {
 		ct.Dumper = &capture.FileDumper{
 			FileManager: getFileManagerWithDefault(basedir),

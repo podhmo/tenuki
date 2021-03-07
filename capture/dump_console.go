@@ -3,15 +3,18 @@ package capture
 import (
 	"net/http"
 	"unsafe"
-
-	"github.com/podhmo/tenuki/capture/httputil"
 )
 
 type ConsoleDumper struct {
+	Layout *Layout
 }
 
 func (d *ConsoleDumper) DumpRequest(p printer, req *http.Request) (State, error) {
-	b, err := httputil.DumpRequest(req, true /* body */)
+	layout := d.Layout
+	if layout == nil {
+		layout = DefaultLayout
+	}
+	b, err := layout.Request.Extract(req)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +28,11 @@ func (d *ConsoleDumper) DumpError(p printer, state State, err error) error {
 }
 
 func (d *ConsoleDumper) DumpResponse(p printer, state State, res *http.Response) error {
-	b, err := httputil.DumpResponse(res, true /* body */)
+	layout := d.Layout
+	if layout == nil {
+		layout = DefaultLayout
+	}
+	b, err := layout.Response.Extract(res)
 	if err != nil {
 		return err
 	}

@@ -8,10 +8,6 @@ import (
 	"net/http"
 )
 
-type Info interface {
-	Info() interface{}
-}
-
 func DumpRequestJSON(
 	req *http.Request,
 	body bool,
