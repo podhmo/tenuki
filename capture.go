@@ -16,7 +16,9 @@ type CapturedTransport struct {
 }
 
 func NewCaptureTransport(t *testing.T, options ...func(*Config)) *CapturedTransport {
-	c := DefaultConfig(options...)
+	c := DefaultConfig(append([]func(*Config){func(c *Config) {
+		c.disableCount = true
+	}}, options...)...)
 	ct := &CapturedTransport{
 		T:                 t,
 		CapturedTransport: c.NewCaptureTransport(t.Name()),
