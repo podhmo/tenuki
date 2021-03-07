@@ -49,6 +49,7 @@ func init() {
 
 type Config struct {
 	captureEnabled   bool
+	disableCount     bool
 	writeFileBaseDir string
 	layout           *capture.Layout
 }
@@ -65,14 +66,30 @@ func DefaultConfig(options ...func(*Config)) *Config {
 	return c
 }
 
+func WithoutCapture() func(*Config) {
+	return func(c *Config) {
+		c.captureEnabled = false
+	}
+}
+func WithWriteFile(basedir string) func(*Config) {
+	return func(c *Config) {
+		c.writeFileBaseDir = basedir
+	}
+}
+func WithLayout(layout *capture.Layout) func(*Config) {
+	return func(c *Config) {
+		c.layout = layout
+	}
+}
+
 func (c *Config) NewCaptureTransport(prefix string) *capture.CapturedTransport {
 	ct := &capture.CapturedTransport{
-		Printer: log.New(os.Stderr, "tenuki", 0),
+		Printer: log.New(os.Stderr, prefix, 0),
 		Dumper:  &capture.ConsoleDumper{Layout: c.layout},
 	}
 	if c.writeFileBaseDir != "" {
 		ct.Dumper = &capture.FileDumper{
-			FileManager: getFileManagerWithDefault(c.writeFileBaseDir),
+			FileManager: getFileManagerWithDefault(c.writeFileBaseDir, c.disableCount),
 			Layout:      c.layout,
 			Prefix:      prefix,
 		}
@@ -85,7 +102,7 @@ var (
 	mu             sync.Mutex
 )
 
-func getFileManagerWithDefault(basedir string) *capture.FileManager {
+func getFileManagerWithDefault(basedir string, disableCount bool) *capture.FileManager {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -96,7 +113,7 @@ func getFileManagerWithDefault(basedir string) *capture.FileManager {
 	var c int64
 	m = &capture.FileManager{
 		BaseDir:      capture.Dir(basedir),
-		DisableCount: !CaptureCountEnabledDefault,
+		DisableCount: disableCount,
 		Counter:      &c,
 	}
 	fileManagerMap[basedir] = m

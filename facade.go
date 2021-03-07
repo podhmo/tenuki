@@ -6,8 +6,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/podhmo/tenuki/capture"
 )
 
 type Facade struct {
@@ -21,28 +19,15 @@ type Facade struct {
 
 func New(t *testing.T, options ...func(*Config)) *Facade {
 	f := &Facade{
-		T:      t,
-		Config: DefaultConfig(options...),
+		T: t,
+		Config: DefaultConfig(append([]func(*Config){func(c *Config) {
+			c.disableCount = true
+		}}, options...)...),
 	}
 	if f.Client == nil {
 		f.Client = &http.Client{Timeout: 1 * time.Second}
 	}
 	return f
-}
-func WithoutCapture() func(*Config) {
-	return func(c *Config) {
-		c.captureEnabled = false
-	}
-}
-func WithWriteFile(basedir string) func(*Config) {
-	return func(c *Config) {
-		c.writeFileBaseDir = basedir
-	}
-}
-func WithLayout(layout *capture.Layout) func(*Config) {
-	return func(c *Config) {
-		c.layout = layout
-	}
 }
 
 func (f *Facade) NewRequest(
