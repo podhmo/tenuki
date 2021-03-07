@@ -71,7 +71,12 @@ func (f *Facade) Do(
 
 	res, err := client.Do(req)
 	if err != nil {
-		t.Fatalf("!! Do: %+v", err)
+		if a.ExpectError == nil {
+			t.Fatalf("!! Do: %+v", err)
+		}
+		if err := a.ExpectError(err); err != nil {
+			t.Fatalf("!! Do, ExpectError: %+v", err)
+		}
 	}
 
 	for _, check := range a.Checks {
@@ -105,8 +110,9 @@ func (f *Facade) DoHandlerFunc(
 }
 
 type Assertion struct {
-	StatusCode int
-	Checks     []func(t *testing.T, res *http.Response)
+	StatusCode  int
+	Checks      []func(t *testing.T, res *http.Response)
+	ExpectError func(err error) error
 }
 
 func AssertStatus(code int) AssertOption {
@@ -118,6 +124,11 @@ func AssertStatus(code int) AssertOption {
 				t.Errorf("status code:\nwant\n\t%+v\nbut\n\t%+v", a.StatusCode, res.StatusCode)
 			}
 		})
+	}
+}
+func AssertError(handler func(err error) error) AssertOption {
+	return func(a *Assertion) {
+		a.ExpectError = handler
 	}
 }
 
