@@ -12,7 +12,7 @@ type Layout struct {
 		Extract(*http.Request) (State, error)
 	}
 	Response interface {
-		Extract(*http.Response) (State, error)
+		Extract(*http.Response, State) (State, error)
 	}
 }
 
@@ -23,17 +23,17 @@ func (f HTTPutilDumpRequestFunc) Extract(req *http.Request) (State, error) {
 	if err != nil {
 		return nil, err
 	}
-	return bytesLazy(b), nil
+	return &bytesState{b: b, req: req}, nil
 }
 
 type HTTPutilDumpResponseFunc func(resp *http.Response, body bool) ([]byte, error)
 
-func (f HTTPutilDumpResponseFunc) Extract(resp *http.Response) (State, error) {
+func (f HTTPutilDumpResponseFunc) Extract(resp *http.Response, s State) (State, error) {
 	b, err := f(resp, true /* body */)
 	if err != nil {
 		return nil, err
 	}
-	return bytesLazy(b), nil
+	return &bytesState{b: b}, nil
 }
 
 // for json output
@@ -63,6 +63,6 @@ type JSONDumpResponseFuncWithStyle struct {
 	) (interface{ Info() interface{} }, error)
 }
 
-func (f *JSONDumpResponseFuncWithStyle) Extract(req *http.Response) (State, error) {
-	return f.Dump(req, true /* body */, f.Style)
+func (f *JSONDumpResponseFuncWithStyle) Extract(res *http.Response, s State) (State, error) {
+	return f.Dump(res, true /* body */, f.Style)
 }

@@ -24,42 +24,33 @@ func (wt *WriteFileTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	err := wt.DumpRequest(req)
+	s, err := wt.DumpRequest(req)
 	if err != nil {
 		return nil, err
 	}
 	res, err := transport.RoundTrip(req)
 	if err != nil {
-		return nil, wt.DumpError(req, err)
+		return nil, wt.DumpError(req, s, err)
 	}
-	if err := wt.DumpResponse(req, res); err != nil {
+	if err := wt.DumpResponse(res, req, s); err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (wt *WriteFileTransport) DumpRequest(req *http.Request) error {
-	filename := wt.FileName(req, wt.GetPrefix(), ".req", 1)
-	f, err := wt.BaseDir.Open(filename)
-	if err != nil {
-		return fmt.Errorf("in request, open: %w", err)
-	}
-
+func (wt *WriteFileTransport) DumpRequest(req *http.Request) (State, error) {
 	layout := wt.Layout
 	if layout == nil {
 		layout = DefaultLayout
 	}
 	s, err := layout.Request.Extract(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := s.Emit(f); err != nil {
-		return err
-	}
-	return nil
+	return s, nil
 }
 
-func (wt *WriteFileTransport) DumpError(req *http.Request, err error) error {
+func (wt *WriteFileTransport) DumpError(req *http.Request, s State, err error) error {
 	filename := wt.FileName(req, wt.GetPrefix(), ".error", 0)
 	f, _ := wt.BaseDir.Open(filename)
 	wt.dumpHeader(f, req)
@@ -67,7 +58,7 @@ func (wt *WriteFileTransport) DumpError(req *http.Request, err error) error {
 	return err
 }
 
-func (wt *WriteFileTransport) DumpResponse(req *http.Request, res *http.Response) error {
+func (wt *WriteFileTransport) DumpResponse(res *http.Response, req *http.Request, s State) error {
 	filename := wt.FileName(req, wt.GetPrefix(), ".res", 0)
 	f, err := wt.BaseDir.Open(filename)
 	if err != nil {
@@ -82,8 +73,8 @@ func (wt *WriteFileTransport) DumpResponse(req *http.Request, res *http.Response
 	if layout == nil {
 		layout = DefaultLayout
 	}
-	s, err := layout.Response.Extract(res)
-	if err := s.Emit(f); err != nil {
+	s2, err := layout.Response.Extract(res, s)
+	if err := s2.Emit(f); err != nil {
 		return err
 	}
 	return nil
