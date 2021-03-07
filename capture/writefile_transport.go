@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 )
 
@@ -21,6 +22,10 @@ type FileManager struct {
 }
 
 func (m *FileManager) FileName(req *http.Request, name string, suffix string, inc int64) string {
+	if strings.Contains(name, "/") {
+		name = strings.ReplaceAll(name, "/", "__")
+	}
+
 	if m.RecordWriter == nil {
 		f, err := m.BaseDir.Open("RECORDS.txt")
 		// xxx: does not Close()
@@ -102,7 +107,7 @@ func (wt *WriteFileTransport) DumpRequest(req *http.Request) error {
 	filename := wt.FileName(req, wt.GetPrefix(), ".req", 1)
 	f, err := wt.BaseDir.Open(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("in request, open: %w", err)
 	}
 	defer f.Close()
 
@@ -131,7 +136,7 @@ func (wt *WriteFileTransport) DumpResponse(req *http.Request, res *http.Response
 	filename := wt.FileName(req, wt.GetPrefix(), ".res", 0)
 	f, err := wt.BaseDir.Open(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("in response, open: %w", err)
 	}
 	defer f.Close()
 
