@@ -20,21 +20,21 @@ func (ct *ConsoleTransport) RoundTrip(req *http.Request) (*http.Response, error)
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	s, err := ct.DumpRequest(req)
+	s, err := ct.HandleRequest(req)
 	if err != nil {
 		return nil, err
 	}
 	res, err := transport.RoundTrip(req)
 	if err != nil {
-		return nil, ct.DumpError(err)
+		return nil, ct.HandleError(err)
 	}
-	if err := ct.DumpResponse(res, s); err != nil {
+	if err := ct.HandleResponse(res, s); err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (ct *ConsoleTransport) DumpRequest(req *http.Request) (style.State, error) {
+func (ct *ConsoleTransport) HandleRequest(req *http.Request) (style.State, error) {
 	layout := ct.Layout
 	if layout == nil {
 		layout = DefaultLayout
@@ -51,12 +51,12 @@ func (ct *ConsoleTransport) DumpRequest(req *http.Request) (style.State, error) 
 	return s, nil
 }
 
-func (ct *ConsoleTransport) DumpError(err error) error {
+func (ct *ConsoleTransport) HandleError(err error) error {
 	ct.Printer.Printf("\x1b[90merror:\n%+v\x1b[0m", err)
 	return err
 }
 
-func (ct *ConsoleTransport) DumpResponse(res *http.Response, s style.State) error {
+func (ct *ConsoleTransport) HandleResponse(res *http.Response, s style.State) error {
 	layout := ct.Layout
 	if layout == nil {
 		layout = DefaultLayout

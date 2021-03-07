@@ -26,21 +26,21 @@ func (wt *WriteFileTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	s, err := wt.DumpRequest(req)
+	s, err := wt.HandleRequest(req)
 	if err != nil {
 		return nil, err
 	}
 	res, err := transport.RoundTrip(req)
 	if err != nil {
-		return nil, wt.DumpError(req, s, err)
+		return nil, wt.HandleError(req, s, err)
 	}
-	if err := wt.DumpResponse(res, req, s); err != nil {
+	if err := wt.HandleResponse(res, req, s); err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (wt *WriteFileTransport) DumpRequest(req *http.Request) (style.State, error) {
+func (wt *WriteFileTransport) HandleRequest(req *http.Request) (style.State, error) {
 	layout := wt.Layout
 	if layout == nil {
 		layout = DefaultLayout
@@ -52,7 +52,7 @@ func (wt *WriteFileTransport) DumpRequest(req *http.Request) (style.State, error
 	return s, nil
 }
 
-func (wt *WriteFileTransport) DumpError(req *http.Request, s style.State, err error) error {
+func (wt *WriteFileTransport) HandleError(req *http.Request, s style.State, err error) error {
 	s.Info().HandleError(func() (io.WriteCloser, error) {
 		filename := wt.FileName(req, wt.GetPrefix(), ".error", 0)
 		return wt.BaseDir.Open(filename)
@@ -60,7 +60,7 @@ func (wt *WriteFileTransport) DumpError(req *http.Request, s style.State, err er
 	return err
 }
 
-func (wt *WriteFileTransport) DumpResponse(res *http.Response, req *http.Request, s style.State) error {
+func (wt *WriteFileTransport) HandleResponse(res *http.Response, req *http.Request, s style.State) error {
 	filename := wt.FileName(req, wt.GetPrefix(), ".res", 0)
 	f, err := wt.BaseDir.Open(filename)
 	if err != nil {
