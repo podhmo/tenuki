@@ -3,6 +3,7 @@ package tenuki
 import (
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -35,8 +36,8 @@ func (f *Facade) NewRequest(
 ) *http.Request {
 	t := f.T
 	t.Helper()
-	if url == "" {
-		url = "http://example.net"
+	if !strings.Contains(url, "://") {
+		url = "http://example.net" + strings.TrimPrefix(url, "/")
 	}
 	return NewRequest(t, method, url, body)
 }
