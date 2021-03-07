@@ -3,10 +3,10 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 
 	"github.com/podhmo/tenuki"
+	"github.com/podhmo/tenuki/difftest"
 )
 
 func Test(t *testing.T) {
@@ -21,10 +21,11 @@ func Test(t *testing.T) {
 		tenuki.AssertStatus(200),
 	)
 
-	want := map[string]string{"message": "hello world"}
 	var got map[string]string
 	f.Extract().JSON(res, &got)
-	if !reflect.DeepEqual(want, got) {
-		t.Errorf("response body\nwant\n\t%+v\nbut\n\t%+v", want, got)
-	}
+
+	difftest.AssertGotAndWantString(t,
+		got,
+		`{"message": "hello world"}`,
+	)
 }
