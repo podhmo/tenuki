@@ -4,50 +4,25 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/podhmo/tenuki/capture"
 )
 
-var (
-	fileManagerMap = map[string]*capture.FileManager{}
-	mu             sync.Mutex
-)
-
-func getFileManagerWithDefault(basedir string) *capture.FileManager {
-	mu.Lock()
-	defer mu.Unlock()
-
-	m, ok := fileManagerMap[basedir]
-	if ok {
-		return m
-	}
-	var c int64
-	m = &capture.FileManager{
-		BaseDir:      capture.Dir(basedir),
-		DisableCount: !CaptureCountEnabledDefault,
-		Counter:      &c,
-	}
-	fileManagerMap[basedir] = m
-	return m
-}
-
-func NewCaptureTransportWithDefault(t *testing.T, basedir string) *CapturedTransport {
-	ct := &CapturedTransport{T: t}
-	// ct.Dumper = &capture.ConsoleDumper{Layout: capture.JSONLayout}
-	if basedir != "" {
-		ct.Dumper = &capture.FileDumper{
-			FileManager: getFileManagerWithDefault(basedir),
-			Prefix:      t.Name(),
-		}
-	}
-	return ct
-}
-
+// for test
 type CapturedTransport struct {
-	capture.CapturedTransport
 	T *testing.T
+	*capture.CapturedTransport
+}
+
+func NewCaptureTransport(t *testing.T, options ...func(*Config)) *CapturedTransport {
+	c := DefaultConfig(options...)
+	ct := &CapturedTransport{
+		T:                 t,
+		CapturedTransport: c.NewCaptureTransport(t.Name()),
+	}
+	ct.CapturedTransport.Printer = ct
+	return ct
 }
 
 func (ct *CapturedTransport) Capture(t *testing.T) func() {
