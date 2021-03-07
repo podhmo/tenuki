@@ -75,8 +75,8 @@ func (d Dir) Open(filename string) (io.WriteCloser, error) {
 type WriteFileTransport struct {
 	Transport http.RoundTripper
 	*FileManager
-	Layout *Layout
-	Prefix string
+	Layout    *Layout
+	GetPrefix func() string // xxx: use t.Name()
 }
 
 func (wt *WriteFileTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -99,7 +99,7 @@ func (wt *WriteFileTransport) RoundTrip(req *http.Request) (*http.Response, erro
 }
 
 func (wt *WriteFileTransport) DumpRequest(req *http.Request) error {
-	filename := wt.FileName(req, wt.Prefix, ".req", 1)
+	filename := wt.FileName(req, wt.GetPrefix(), ".req", 1)
 	f, err := wt.BaseDir.Open(filename)
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func (wt *WriteFileTransport) DumpRequest(req *http.Request) error {
 }
 
 func (wt *WriteFileTransport) DumpError(req *http.Request, err error) error {
-	filename := wt.FileName(req, wt.Prefix, ".error", 0)
+	filename := wt.FileName(req, wt.GetPrefix(), ".error", 0)
 	f, _ := wt.BaseDir.Open(filename)
 	wt.dumpHeader(f, req)
 	fmt.Fprintf(f, "%+v\n", err)
@@ -128,7 +128,7 @@ func (wt *WriteFileTransport) DumpError(req *http.Request, err error) error {
 }
 
 func (wt *WriteFileTransport) DumpResponse(req *http.Request, res *http.Response) error {
-	filename := wt.FileName(req, wt.Prefix, ".res", 0)
+	filename := wt.FileName(req, wt.GetPrefix(), ".res", 0)
 	f, err := wt.BaseDir.Open(filename)
 	if err != nil {
 		return err

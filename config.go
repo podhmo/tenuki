@@ -2,6 +2,7 @@ package tenuki
 
 import (
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -51,7 +52,12 @@ type Config struct {
 	captureEnabled   bool
 	disableCount     bool
 	writeFileBaseDir string
-	layout           *capture.Layout
+
+	layout  *capture.Layout
+	printer printer
+}
+type printer interface {
+	Printf(fmt string, args ...interface{})
 }
 
 func DefaultConfig(options ...func(*Config)) *Config {
@@ -59,6 +65,7 @@ func DefaultConfig(options ...func(*Config)) *Config {
 		layout:           DefaultLayout,
 		captureEnabled:   CaptureEnabledDefault,
 		writeFileBaseDir: CaptureWriteFileBaseDir,
+		printer:          log.New(os.Stderr, "tenuki", 0),
 	}
 	for _, opt := range options {
 		opt(c)
@@ -81,20 +88,31 @@ func WithLayout(layout *capture.Layout) func(*Config) {
 		c.layout = layout
 	}
 }
-
-func (c *Config) NewCaptureTransport(prefix string) *capture.CapturedTransport {
-	ct := &capture.CapturedTransport{
-		Printer: log.New(os.Stderr, prefix, 0),
-		Dumper:  &capture.ConsoleDumper{Layout: c.layout},
+func WithPrinter(printer printer) func(*Config) {
+	return func(c *Config) {
+		c.printer = printer
 	}
-	if c.writeFileBaseDir != "" {
-		ct.Dumper = &capture.FileDumper{
+}
+
+func (c *Config) NewCaptureTransport(transport http.RoundTripper, getPrefix func() string) http.RoundTripper {
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+	switch c.writeFileBaseDir {
+	case "":
+		return &capture.ConsoleTransport{
+			Transport: transport,
+			Printer:   c.printer,
+			Layout:    c.layout,
+		}
+	default:
+		return &capture.WriteFileTransport{
+			Transport:   transport,
 			FileManager: getFileManagerWithDefault(c.writeFileBaseDir, c.disableCount),
 			Layout:      c.layout,
-			Prefix:      prefix,
+			GetPrefix:   getPrefix,
 		}
 	}
-	return ct
 }
 
 var (
