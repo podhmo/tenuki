@@ -62,12 +62,7 @@ func (f *Facade) Do(
 	// TODO: not goroutine safe
 	originalTransport := client.Transport
 	if f.captureEnabled {
-		ct := &CapturedTransport{
-			T:                 t,
-			CapturedTransport: f.NewCaptureTransport(t.Name()),
-		}
-		ct.CapturedTransport.Printer = ct
-		ct.Transport = client.Transport
+		ct := NewCaptureTransport(t, client.Transport)
 		client.Transport = ct
 	}
 	defer func() {

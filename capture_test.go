@@ -6,12 +6,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/podhmo/tenuki"
 )
 
 func TestCapture(t *testing.T) {
-	transport := tenuki.NewCaptureTransport(t)
+	transport := tenuki.NewCaptureTransport(t, nil)
 
 	ts := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -20,18 +21,22 @@ func TestCapture(t *testing.T) {
 	))
 	defer ts.Close()
 
-	client := &http.Client{Transport: transport}
+	client := &http.Client{Transport: transport, Timeout: 1 * time.Second}
 
 	t.Run("request 1", func(t *testing.T) {
 		defer transport.Capture(t)()
 
-		client.Get(ts.URL)
+		if _, err := client.Get(ts.URL); err != nil {
+			t.Fatalf("!! %+v", err)
+		}
 	})
 
 	t.Run("request 2", func(t *testing.T) {
 		defer transport.Capture(t)()
 
 		req, _ := http.NewRequest("POST", ts.URL, strings.NewReader(`{"me": "foo"}`))
-		client.Do(req)
+		if _, err := client.Do(req); err != nil {
+			t.Fatalf("!! %+v", err)
+		}
 	})
 }
