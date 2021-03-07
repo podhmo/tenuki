@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync/atomic"
-
-	"github.com/podhmo/tenuki/capture/httputil"
 )
 
 type FileManager struct {
@@ -76,6 +74,7 @@ func (d Dir) Open(filename string) (io.WriteCloser, error) {
 
 type FileDumper struct {
 	*FileManager
+	Layout *Layout
 	Prefix string
 }
 
@@ -88,10 +87,15 @@ func (d *FileDumper) DumpRequest(p printer, req *http.Request) (State, error) {
 	}
 	defer f.Close()
 
-	b, err := httputil.DumpRequest(req, true /* body */)
+	layout := d.Layout
+	if layout == nil {
+		layout = DefaultLayout
+	}
+	b, err := layout.Request.Extract(req)
 	if err != nil {
 		return state, err
 	}
+
 	f.Write(b)
 	return state, nil
 }
@@ -117,10 +121,11 @@ func (d *FileDumper) DumpResponse(p printer, state State, res *http.Response) er
 	if req != nil {
 		d.dumpHeader(f, req)
 	}
-	b, err := httputil.DumpResponse(res, true /* body */)
-	if err != nil {
-		return err
+	layout := d.Layout
+	if layout == nil {
+		layout = DefaultLayout
 	}
+	b, err := layout.Response.Extract(res)
 	f.Write(b)
 	return nil
 }
