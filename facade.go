@@ -2,70 +2,46 @@ package tenuki
 
 import (
 	"io"
-	"log"
 	"net/http"
-	"os"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/podhmo/tenuki/capture"
 )
-
-var (
-	CaptureEnabledDefault   bool   = true
-	CaptureWriteFileBaseDir string = ""
-
-	CaptureCountEnabledDefault bool = false
-)
-
-func init() {
-	if ok, _ := strconv.ParseBool(os.Getenv("NOCAPTURE")); ok {
-		log.Println("CAPTURE_DISABLED is true, so deactivate tenuki.capture function")
-		CaptureEnabledDefault = false
-	}
-	if ok, _ := strconv.ParseBool(os.Getenv("CAPTURE_DISABLED")); ok {
-		log.Println("CAPTURE_DISABLED is true, so deactivate tenuki.capture function")
-		CaptureEnabledDefault = false
-	}
-	if filename := os.Getenv("CAPTURE_WRITEFILE"); filename != "" {
-		log.Println("CAPTURE_WRITEFILE is set, so activate the function writing capture output to files")
-		CaptureWriteFileBaseDir = filename
-	}
-}
 
 type Facade struct {
-	T      *testing.T
-	Client *http.Client
+	T *testing.T
+	*Config
 
-	captureEnabled   bool
-	writeFileBaseDir string
-
+	Client    *http.Client
 	extractor *ExtractFacade
 	mu        sync.Mutex
 }
 
-func New(t *testing.T, options ...func(*Facade)) *Facade {
+func New(t *testing.T, options ...func(*Config)) *Facade {
 	f := &Facade{
-		T:                t,
-		captureEnabled:   CaptureEnabledDefault,
-		writeFileBaseDir: CaptureWriteFileBaseDir,
-	}
-	for _, opt := range options {
-		opt(f)
+		T:      t,
+		Config: DefaultConfig(options...),
 	}
 	if f.Client == nil {
 		f.Client = &http.Client{Timeout: 1 * time.Second}
 	}
 	return f
 }
-func WithoutCapture() func(*Facade) {
-	return func(f *Facade) {
-		f.captureEnabled = false
+func WithoutCapture() func(*Config) {
+	return func(c *Config) {
+		c.captureEnabled = false
 	}
 }
-func WithWriteFile(basedir string) func(*Facade) {
-	return func(f *Facade) {
-		f.writeFileBaseDir = basedir
+func WithWriteFile(basedir string) func(*Config) {
+	return func(c *Config) {
+		c.writeFileBaseDir = basedir
+	}
+}
+func WithLayout(layout *capture.Layout) func(*Config) {
+	return func(c *Config) {
+		c.layout = layout
 	}
 }
 
@@ -100,7 +76,11 @@ func (f *Facade) Do(
 	// TODO: not goroutine safe
 	originalTransport := client.Transport
 	if f.captureEnabled {
-		ct := NewCaptureTransportWithDefault(f.T, f.writeFileBaseDir)
+		ct := &CapturedTransport{
+			T:                 t,
+			CapturedTransport: f.NewCaptureTransport(t.Name()),
+		}
+		ct.CapturedTransport.Printer = ct
 		ct.Transport = client.Transport
 		client.Transport = ct
 	}

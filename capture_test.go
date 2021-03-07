@@ -11,7 +11,7 @@ import (
 )
 
 func TestCapture(t *testing.T) {
-	transport := &tenuki.CapturedTransport{}
+	transport := tenuki.NewCaptureTransport(t)
 
 	ts := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {

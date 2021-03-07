@@ -5,6 +5,7 @@ import (
 
 	"github.com/podhmo/tenuki/capture/gostyle"
 	"github.com/podhmo/tenuki/capture/httputil"
+	"github.com/podhmo/tenuki/capture/openapistyle"
 )
 
 type printer interface {
@@ -44,10 +45,20 @@ var (
 			Style: gostyle.ExtractResponseInfo,
 		},
 	}
+	OpenAPILayout = &Layout{
+		Request: &JSONDumpRequestFuncWithStyle{
+			Dump:  httputil.DumpRequestJSON,
+			Style: openapistyle.ExtractRequestInfo,
+		},
+		Response: &JSONDumpResponseFuncWithStyle{
+			Dump:  httputil.DumpResponseJSON,
+			Style: openapistyle.ExtractResponseInfo,
+		},
+	}
 )
 
 // default setting
 var (
-	DefaultDumper  Dumper = &ConsoleDumper{}
+	DefaultDumper Dumper = &ConsoleDumper{}
 	DefaultLayout        = TextLayout
 )
