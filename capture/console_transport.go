@@ -61,11 +61,14 @@ func (ct *ConsoleTransport) DumpResponse(res *http.Response, s style.State) erro
 	if layout == nil {
 		layout = DefaultLayout
 	}
-	b, err := layout.Response.Extract(res, s)
+	s, err := layout.Response.Extract(res, s)
 	if err != nil {
 		return err
 	}
-
+	b, err := s.Encode()
+	if err != nil {
+		return err
+	}
 	ct.Printer.Printf("\x1b[90mresponse:\n%s\x1b[0m", *(*string)(unsafe.Pointer(&b)))
 	return nil
 }
