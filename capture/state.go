@@ -1,17 +1,13 @@
 package capture
 
 import (
+	"fmt"
 	"io"
+	"log"
 	"net/http"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
-
-type State interface {
-	Encode() ([]byte, error)
-	Emit(w io.WriteCloser) error
-
-	// HandleError(open func() (io.WriteCloser, error), err error) error
-	// HandleResponse(w io.Writer, res *http.Response) error
-}
 
 // for text output
 type bytesState struct {
@@ -29,9 +25,34 @@ func (s *bytesState) Emit(w io.WriteCloser) error {
 	defer w.Close()
 	return nil
 }
+func (s *bytesState) Info() style.Info {
+	return s
+}
+func (s *bytesState) HandleError(open func() (io.WriteCloser, error), err error) {
+	f, openErr := open()
+	if openErr != nil {
+		log.Printf("something wrong, when open file %+v", err)
+		return
+	}
 
-// func (l bytesLazy) HandleError(open func() (io.Writer, error), err error) error {
-// 	wt.dumpHeader(f, req)
-// 	fmt.Fprintf(f, "%+v\n", err)
-// 	return nil
-// }
+	if err != nil {
+		defer f.Close()
+		s.dumpHeader(f)
+		fmt.Fprintf(f, "%+v\n", err)
+	}
+}
+
+func (s *bytesState) dumpHeader(w io.Writer) {
+	req := s.req
+
+	reqURI := req.RequestURI
+	if reqURI == "" {
+		reqURI = req.URL.RequestURI()
+	}
+	method := req.Method
+	if method == "" {
+		method = "GET"
+	}
+	fmt.Fprintf(w, "%s %s HTTP/%d.%d\r\n", method,
+		reqURI, req.ProtoMajor, req.ProtoMinor)
+}

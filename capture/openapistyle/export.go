@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
 
 type RequestInfo struct {
@@ -17,12 +19,11 @@ type RequestInfo struct {
 	Paths Paths `json:"paths"`
 }
 
-// for interface
-func (info RequestInfo) Info() interface{} {
-	return nil
+// TODO
+func (s *RequestInfo) HandleError(open func() (io.WriteCloser, error), err error) {
 }
 
-func ExtractRequestInfo(req *http.Request, body io.Reader) (interface{ Info() interface{} }, error) {
+func ExtractRequestInfo(req *http.Request, body io.Reader) (style.Info, error) {
 	info := RequestInfo{}
 
 	{
@@ -45,23 +46,22 @@ func ExtractRequestInfo(req *http.Request, body io.Reader) (interface{ Info() in
 
 	paths, err := toPaths(req, body)
 	if err != nil {
-		return info, fmt.Errorf("extract paths, %w", err)
+		return nil, fmt.Errorf("extract paths, %w", err)
 	}
 	info.Paths = paths
-	return info, nil
+	return &info, nil
 }
 
 type ResponseInfo struct {
 }
 
 // for interface
-func (info ResponseInfo) Info() interface{} {
-	return nil
+func (s *ResponseInfo) HandleError(open func() (io.WriteCloser, error), err error) {
 }
 
-func ExtractResponseInfo(resp *http.Response, body io.Reader) (interface{ Info() interface{} }, error) {
+func ExtractResponseInfo(resp *http.Response, body io.Reader) (style.Info, error) {
 	info := ResponseInfo{}
-	return info, nil
+	return &info, nil
 }
 
 // Return value if nonempty, def otherwise.

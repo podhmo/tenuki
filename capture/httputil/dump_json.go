@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
 
 type JSONState struct {
-	Info interface {
-		Info() interface{}
-	}
+	info style.Info
 }
 
 func (s *JSONState) Encode() ([]byte, error) {
-	info := s.Info
+	info := s.info
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	enc.SetIndent("", "  ")
@@ -38,10 +38,14 @@ func (s *JSONState) Emit(f io.WriteCloser) error {
 	return nil
 }
 
+func (s *JSONState) Info() style.Info {
+	return s.info
+}
+
 func DumpRequestJSON(
 	req *http.Request,
 	body bool,
-	extractInfo func(*http.Request, io.Reader) (interface{ Info() interface{} }, error),
+	extractInfo func(*http.Request, io.Reader) (style.Info, error),
 ) (*JSONState, error) {
 	var err error
 	save := req.Body
@@ -59,13 +63,13 @@ func DumpRequestJSON(
 	if err != nil {
 		return nil, fmt.Errorf("extract request info, %w", err)
 	}
-	return &JSONState{Info: info}, nil
+	return &JSONState{info: info}, nil
 }
 
 func DumpResponseJSON(
 	resp *http.Response,
 	body bool,
-	extractInfo func(*http.Response, io.Reader) (interface{ Info() interface{} }, error),
+	extractInfo func(*http.Response, io.Reader) (style.Info, error),
 ) (*JSONState, error) {
 	var err error
 	save := resp.Body
@@ -97,5 +101,5 @@ func DumpResponseJSON(
 	if err != nil {
 		return nil, fmt.Errorf("extract response info, %w", err)
 	}
-	return &JSONState{Info: info}, nil
+	return &JSONState{info: info}, nil
 }

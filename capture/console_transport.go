@@ -3,6 +3,8 @@ package capture
 import (
 	"net/http"
 	"unsafe"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
 
 type ConsoleTransport struct {
@@ -32,7 +34,7 @@ func (ct *ConsoleTransport) RoundTrip(req *http.Request) (*http.Response, error)
 	return res, nil
 }
 
-func (ct *ConsoleTransport) DumpRequest(req *http.Request) (State, error) {
+func (ct *ConsoleTransport) DumpRequest(req *http.Request) (style.State, error) {
 	layout := ct.Layout
 	if layout == nil {
 		layout = DefaultLayout
@@ -54,7 +56,7 @@ func (ct *ConsoleTransport) DumpError(err error) error {
 	return err
 }
 
-func (ct *ConsoleTransport) DumpResponse(res *http.Response, s State) error {
+func (ct *ConsoleTransport) DumpResponse(res *http.Response, s style.State) error {
 	layout := ct.Layout
 	if layout == nil {
 		layout = DefaultLayout

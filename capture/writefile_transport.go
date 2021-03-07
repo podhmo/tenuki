@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync/atomic"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
 
 type WriteFileTransport struct {
@@ -38,7 +40,7 @@ func (wt *WriteFileTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	return res, nil
 }
 
-func (wt *WriteFileTransport) DumpRequest(req *http.Request) (State, error) {
+func (wt *WriteFileTransport) DumpRequest(req *http.Request) (style.State, error) {
 	layout := wt.Layout
 	if layout == nil {
 		layout = DefaultLayout
@@ -50,15 +52,15 @@ func (wt *WriteFileTransport) DumpRequest(req *http.Request) (State, error) {
 	return s, nil
 }
 
-func (wt *WriteFileTransport) DumpError(req *http.Request, s State, err error) error {
-	filename := wt.FileName(req, wt.GetPrefix(), ".error", 0)
-	f, _ := wt.BaseDir.Open(filename)
-	wt.dumpHeader(f, req)
-	fmt.Fprintf(f, "%+v\n", err)
+func (wt *WriteFileTransport) DumpError(req *http.Request, s style.State, err error) error {
+	s.Info().HandleError(func() (io.WriteCloser, error) {
+		filename := wt.FileName(req, wt.GetPrefix(), ".error", 0)
+		return wt.BaseDir.Open(filename)
+	}, err)
 	return err
 }
 
-func (wt *WriteFileTransport) DumpResponse(res *http.Response, req *http.Request, s State) error {
+func (wt *WriteFileTransport) DumpResponse(res *http.Response, req *http.Request, s style.State) error {
 	filename := wt.FileName(req, wt.GetPrefix(), ".res", 0)
 	f, err := wt.BaseDir.Open(filename)
 	if err != nil {
@@ -66,9 +68,9 @@ func (wt *WriteFileTransport) DumpResponse(res *http.Response, req *http.Request
 	}
 	defer f.Close()
 
-	if req != nil {
-		wt.dumpHeader(f, req)
-	}
+	// if req != nil {
+	// 	wt.dumpHeader(f, req)
+	// }
 	layout := wt.Layout
 	if layout == nil {
 		layout = DefaultLayout
@@ -78,19 +80,6 @@ func (wt *WriteFileTransport) DumpResponse(res *http.Response, req *http.Request
 		return err
 	}
 	return nil
-}
-
-func (wt *WriteFileTransport) dumpHeader(w io.Writer, req *http.Request) {
-	reqURI := req.RequestURI
-	if reqURI == "" {
-		reqURI = req.URL.RequestURI()
-	}
-	method := req.Method
-	if method == "" {
-		method = "GET"
-	}
-	fmt.Fprintf(w, "%s %s HTTP/%d.%d\r\n", method,
-		reqURI, req.ProtoMajor, req.ProtoMinor)
 }
 
 type FileManager struct {

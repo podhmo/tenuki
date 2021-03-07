@@ -16,9 +16,8 @@ import (
 
 type Info map[string]interface{}
 
-// for interface
-func (i Info) Info() interface{} {
-	return nil
+// TODO
+func (i Info) HandleError(open func() (io.WriteCloser, error), err error) {
 }
 
 func parseRequest(req *http.Request, body io.Reader) (Info, error) {
