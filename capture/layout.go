@@ -1,6 +1,7 @@
 package capture
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/podhmo/tenuki/capture/gostyle"
@@ -10,11 +11,16 @@ import (
 
 type Layout struct {
 	Request interface {
-		Extract(*http.Request) ([]byte, error)
+		Extract(*http.Request) (State, error)
 	}
 	Response interface {
-		Extract(*http.Response) ([]byte, error)
+		Extract(*http.Response) (State, error)
 	}
+}
+
+type State interface {
+	Encode() ([]byte, error)
+	Emit(w io.WriteCloser) error
 }
 
 var (

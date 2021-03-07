@@ -109,18 +109,18 @@ func (wt *WriteFileTransport) DumpRequest(req *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("in request, open: %w", err)
 	}
-	defer f.Close()
 
 	layout := wt.Layout
 	if layout == nil {
 		layout = DefaultLayout
 	}
-	b, err := layout.Request.Extract(req)
+	s, err := layout.Request.Extract(req)
 	if err != nil {
 		return err
 	}
-
-	f.Write(b)
+	if err := s.Emit(f); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -147,8 +147,10 @@ func (wt *WriteFileTransport) DumpResponse(req *http.Request, res *http.Response
 	if layout == nil {
 		layout = DefaultLayout
 	}
-	b, err := layout.Response.Extract(res)
-	f.Write(b)
+	s, err := layout.Response.Extract(res)
+	if err := s.Emit(f); err != nil {
+		return err
+	}
 	return nil
 }
 
