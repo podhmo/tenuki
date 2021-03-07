@@ -37,7 +37,7 @@ func (f *Facade) NewRequest(
 	t := f.T
 	t.Helper()
 	if !strings.Contains(url, "://") {
-		url = "http://example.net" + strings.TrimPrefix(url, "/")
+		url = "http://example.net/" + strings.TrimPrefix(url, "/")
 	}
 	return NewRequest(t, method, url, body)
 }
