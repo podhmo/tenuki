@@ -92,8 +92,7 @@ toplevel:
 }
 
 func parseBody(body io.Reader, contentType string) (interface{}, error) {
-	ct := strings.SplitN(contentType, "+", 2)[0]
-	switch ct {
+	switch ct := contentType; ct {
 	case "application/json", "text/json":
 		var ob interface{}
 		if err := json.NewDecoder(body).Decode(&ob); err != nil {
