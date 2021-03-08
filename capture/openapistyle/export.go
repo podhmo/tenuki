@@ -23,8 +23,9 @@ type RequestInfo struct {
 func (s *RequestInfo) HandleError(open func() (io.WriteCloser, error), err error) {
 }
 
-func ExtractRequestInfo(req *http.Request, body io.Reader) (style.Info, error) {
+func ExtractRequestInfo(req *http.Request) (style.Info, error) {
 	info := RequestInfo{}
+	body := req.Body
 
 	{
 		reqURI := req.RequestURI
@@ -59,9 +60,8 @@ type ResponseInfo struct {
 func (s *ResponseInfo) HandleError(open func() (io.WriteCloser, error), err error) {
 }
 
-func ExtractResponseInfo(resp *http.Response, body io.Reader) (style.Info, error) {
-	info := ResponseInfo{}
-	return &info, nil
+func ExtractResponseInfo(resp *http.Response, info style.Info) (style.Info, error) {
+	return &ResponseInfo{}, nil
 }
 
 // Return value if nonempty, def otherwise.

@@ -20,11 +20,11 @@ type Info map[string]interface{}
 func (i Info) HandleError(open func() (io.WriteCloser, error), err error) {
 }
 
-func parseRequest(req *http.Request, body io.Reader) (Info, error) {
+func parseRequest(req *http.Request) (Info, error) {
 	info := InfoFromInterface(req, []string{
 		"URL", "Body", "GetBody", "Close", "Trailer", "TLS", "Cancel", "Response", "ctx",
 	})
-
+	body := req.Body
 	if body != nil {
 		ct, _, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
 		if err != nil {
@@ -42,11 +42,11 @@ func parseRequest(req *http.Request, body io.Reader) (Info, error) {
 	return info, nil
 }
 
-func parseResponse(resp *http.Response, body io.Reader) (Info, error) {
+func parseResponse(resp *http.Response) (Info, error) {
 	info := InfoFromInterface(resp, []string{
 		"Close", "Body", "Trailer", "Request", "TLS", "Request",
 	})
-
+	body := resp.Body
 	if body != nil {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {

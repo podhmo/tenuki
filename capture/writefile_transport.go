@@ -53,6 +53,7 @@ func (wt *WriteFileTransport) HandleRequest(req *http.Request) (style.State, err
 }
 
 func (wt *WriteFileTransport) HandleError(req *http.Request, s style.State, err error) error {
+	// TODO: dump request?
 	s.Info().HandleError(func() (io.WriteCloser, error) {
 		filename := wt.FileName(req, wt.GetPrefix(), ".error", 0)
 		return wt.BaseDir.Open(filename)
@@ -68,9 +69,6 @@ func (wt *WriteFileTransport) HandleResponse(res *http.Response, req *http.Reque
 	}
 	defer f.Close()
 
-	// if req != nil {
-	// 	wt.dumpHeader(f, req)
-	// }
 	layout := wt.Layout
 	if layout == nil {
 		layout = DefaultLayout

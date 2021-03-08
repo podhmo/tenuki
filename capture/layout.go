@@ -1,7 +1,6 @@
 package capture
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/podhmo/tenuki/capture/httputil"
@@ -39,10 +38,7 @@ func (f HTTPutilDumpResponseFunc) Extract(resp *http.Response, s style.State) (s
 
 // for json output
 type JSONDumpRequestFuncWithStyle struct {
-	Style func(
-		*http.Request,
-		io.Reader,
-	) (style.Info, error)
+	Style func(*http.Request) (style.Info, error)
 }
 
 func (f *JSONDumpRequestFuncWithStyle) Extract(req *http.Request) (style.State, error) {
@@ -51,13 +47,10 @@ func (f *JSONDumpRequestFuncWithStyle) Extract(req *http.Request) (style.State, 
 }
 
 type JSONDumpResponseFuncWithStyle struct {
-	Style func(
-		*http.Response,
-		io.Reader,
-	) (style.Info, error)
+	Style func(*http.Response, style.Info) (style.Info, error)
 }
 
 func (f *JSONDumpResponseFuncWithStyle) Extract(res *http.Response, s style.State) (style.State, error) {
-	info, err := httputil.DumpResponseJSON(res, true /* body */, f.Style)
+	info, err := httputil.DumpResponseJSON(res, s, true /* body */, f.Style)
 	return info, err
 }
