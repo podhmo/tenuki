@@ -34,12 +34,19 @@ func New(t *testing.T, options ...func(*Config)) *Facade {
 func (f *Facade) NewRequest(
 	method, url string, body io.Reader,
 ) *http.Request {
-	t := f.T
-	t.Helper()
+	f.T.Helper()
 	if !strings.Contains(url, "://") {
 		url = "http://example.net/" + strings.TrimPrefix(url, "/")
 	}
-	return NewRequest(t, method, url, body)
+	return NewRequest(f.T, method, url, body)
+}
+func (f *Facade) NewJSONRequest(
+	method, url string, body io.Reader,
+) *http.Request {
+	f.T.Helper()
+	req := f.NewRequest(method, url, body)
+	req.Header.Add("Content-Type", "application/json")
+	return req
 }
 
 func (f *Facade) Do(
