@@ -12,7 +12,7 @@ type Layout struct {
 		Extract(*http.Request) (style.State, error)
 	}
 	Response interface {
-		Extract(*http.Response, style.State) (style.State, error)
+		Extract(*http.Response) (style.State, error)
 	}
 }
 
@@ -28,12 +28,12 @@ func (f HTTPutilDumpRequestFunc) Extract(req *http.Request) (style.State, error)
 
 type HTTPutilDumpResponseFunc func(resp *http.Response, body bool) ([]byte, error)
 
-func (f HTTPutilDumpResponseFunc) Extract(resp *http.Response, s style.State) (style.State, error) {
+func (f HTTPutilDumpResponseFunc) Extract(resp *http.Response) (style.State, error) {
 	b, err := f(resp, true /* body */)
 	if err != nil {
 		return nil, err
 	}
-	return &keepPrevState{prev: s, this: &bytesState{b: b}}, nil
+	return &bytesState{b: b}, nil
 }
 
 // for json output
@@ -43,14 +43,14 @@ type JSONDumpRequestFuncWithStyle struct {
 
 func (f *JSONDumpRequestFuncWithStyle) Extract(req *http.Request) (style.State, error) {
 	info, err := httputil.DumpRequestJSON(req, true /* body */, f.Style)
-	return info, err
+	return &jsonState{info: info}, err
 }
 
 type JSONDumpResponseFuncWithStyle struct {
-	Style func(*http.Response, style.Info) (style.Info, error)
+	Style func(*http.Response) (style.Info, error)
 }
 
-func (f *JSONDumpResponseFuncWithStyle) Extract(res *http.Response, s style.State) (style.State, error) {
-	info, err := httputil.DumpResponseJSON(res, s, true /* body */, f.Style)
-	return info, err
+func (f *JSONDumpResponseFuncWithStyle) Extract(res *http.Response) (style.State, error) {
+	info, err := httputil.DumpResponseJSON(res, true /* body */, f.Style)
+	return &jsonState{info: info}, err
 }

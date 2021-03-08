@@ -61,7 +61,7 @@ func (ct *ConsoleTransport) HandleResponse(res *http.Response, s style.State) er
 	if layout == nil {
 		layout = DefaultLayout
 	}
-	s, err := layout.Response.Extract(res, s)
+	s, err := layout.Response.Extract(res)
 	if err != nil {
 		return err
 	}

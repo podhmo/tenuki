@@ -10,11 +10,20 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
 
 // reflection version
 
 type Info map[string]interface{}
+
+func (i Info) Merge(i2 style.Info) style.Info {
+	return Info{
+		"Request":  i,
+		"Response": i2,
+	}
+}
 
 // TODO
 func (i Info) HandleError(open func() (io.WriteCloser, error), err error) {

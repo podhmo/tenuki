@@ -1,51 +1,17 @@
 package httputil
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/podhmo/tenuki/capture/style"
 )
 
-type JSONState struct {
-	info style.Info
-}
-
-func (s *JSONState) Encode() ([]byte, error) {
-	info := s.info
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
-	enc.SetIndent("", "  ")
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(info); err != nil {
-		return nil, fmt.Errorf("encode json, %w", err)
-	}
-	return b.Bytes(), nil
-}
-
-func (s *JSONState) Emit(f io.Writer) error {
-	b, err := s.Encode()
-	if err != nil {
-		return err
-	}
-	if _, err := f.Write(b); err != nil {
-		return fmt.Errorf("write json, %w", err)
-	}
-	return nil
-}
-
-func (s *JSONState) Info() style.Info {
-	return s.info
-}
-
 func DumpRequestJSON(
 	req *http.Request,
 	body bool,
 	extractInfo func(*http.Request) (style.Info, error),
-) (*JSONState, error) {
+) (style.Info, error) {
 	var err error
 	save := req.Body
 	{
@@ -63,15 +29,14 @@ func DumpRequestJSON(
 	if err != nil {
 		return nil, fmt.Errorf("extract request info, %w", err)
 	}
-	return &JSONState{info: info}, nil
+	return info, nil
 }
 
 func DumpResponseJSON(
 	resp *http.Response,
-	state style.State,
 	body bool,
-	extractInfo func(*http.Response, style.Info) (style.Info, error),
-) (*JSONState, error) {
+	extractInfo func(*http.Response) (style.Info, error),
+) (style.Info, error) {
 	var err error
 	save := resp.Body
 	savecl := resp.ContentLength
@@ -95,11 +60,11 @@ func DumpResponseJSON(
 		}
 	}
 
-	info, err := extractInfo(resp, state.Info())
+	info, err := extractInfo(resp)
 	resp.Body = save
 	resp.ContentLength = savecl
 	if err != nil {
 		return nil, fmt.Errorf("extract response info, %w", err)
 	}
-	return &JSONState{info: info}, nil
+	return info, nil
 }

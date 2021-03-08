@@ -19,6 +19,11 @@ type RequestInfo struct {
 	Paths Paths `json:"paths"`
 }
 
+func (s *RequestInfo) Merge(res style.Info) style.Info {
+	// TODO
+	return res
+}
+
 // TODO
 func (s *RequestInfo) HandleError(open func() (io.WriteCloser, error), err error) {
 }
@@ -53,15 +58,9 @@ func ExtractRequestInfo(req *http.Request) (style.Info, error) {
 	return &info, nil
 }
 
-type ResponseInfo struct {
-}
-
-// for interface
-func (s *ResponseInfo) HandleError(open func() (io.WriteCloser, error), err error) {
-}
-
-func ExtractResponseInfo(resp *http.Response, info style.Info) (style.Info, error) {
-	return &ResponseInfo{}, nil
+func ExtractResponseInfo(resp *http.Response) (style.Info, error) {
+	// TODO:
+	return &RequestInfo{}, nil
 }
 
 // Return value if nonempty, def otherwise.

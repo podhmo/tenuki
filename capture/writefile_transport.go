@@ -73,8 +73,14 @@ func (wt *WriteFileTransport) HandleResponse(res *http.Response, req *http.Reque
 	if layout == nil {
 		layout = DefaultLayout
 	}
-	s2, err := layout.Response.Extract(res, s)
-	if err := s2.Emit(f); err != nil {
+	s2, err := layout.Response.Extract(res)
+	if err != nil {
+		if writeReqErr := s.Emit(f); writeReqErr != nil {
+			log.Printf("on error, at least writing request info, but it is also error %+v", writeReqErr)
+		}
+		return err
+	}
+	if err := s.EmitBoth(f, s2); err != nil {
 		return err
 	}
 	return nil
