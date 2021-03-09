@@ -38,8 +38,13 @@ func (f *Facade) NewRequest(
 	if !strings.Contains(url, "://") {
 		url = "http://example.net/" + strings.TrimPrefix(url, "/")
 	}
-	return NewRequest(f.T, method, url, body)
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		f.T.Fatalf("!! NewRequest: %+v", err)
+	}
+	return req
 }
+
 func (f *Facade) NewJSONRequest(
 	method, url string, body io.Reader,
 ) *http.Request {
@@ -144,16 +149,3 @@ func NewAssertion() *Assertion {
 }
 
 type AssertOption func(*Assertion)
-
-func NewRequest(
-	t *testing.T,
-	method, url string, body io.Reader,
-) *http.Request {
-	t.Helper()
-
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		t.Fatalf("!! NewRequest: %+v", err)
-	}
-	return req
-}
