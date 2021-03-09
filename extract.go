@@ -60,7 +60,7 @@ func (f *ExtractFacade) buffer(res *http.Response) *bytes.Buffer {
 	return bytes.NewBuffer(cache)
 }
 
-func (f *ExtractFacade) JSON(res *http.Response, ob interface{}) {
+func (f *ExtractFacade) BindJSON(res *http.Response, ob interface{}) {
 	t := f.T
 	t.Helper()
 
@@ -68,6 +68,13 @@ func (f *ExtractFacade) JSON(res *http.Response, ob interface{}) {
 	if err := decoder.Decode(&ob); err != nil {
 		t.Fatalf("!! DecodeJSON: %+v", err)
 	}
+}
+func (f *ExtractFacade) JSON(res *http.Response) interface{} {
+	t := f.T
+	t.Helper()
+	var ob interface{}
+	f.BindJSON(res, &ob)
+	return ob
 }
 func (f *ExtractFacade) Bytes(res *http.Response) []byte {
 	t := f.T

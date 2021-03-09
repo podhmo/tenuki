@@ -39,7 +39,7 @@ func TestDo(t *testing.T) {
 	// assertion
 	want := Body{Message: "sum is 6"}
 	var got Body
-	f.Extract().JSON(res, &got)
+	f.Extract().BindJSON(res, &got)
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("response body\nwant\n\t%+v\nbut\n\t%+v", want, got)
 	}
@@ -48,7 +48,7 @@ func TestDo(t *testing.T) {
 	{
 		want := Body{Message: "sum is 6"}
 		var got Body
-		f.Extract().JSON(res, &got)
+		f.Extract().BindJSON(res, &got)
 		if !reflect.DeepEqual(want, got) {
 			t.Errorf("response body\nwant\n\t%+v\nbut\n\t%+v", want, got)
 		}
@@ -102,7 +102,7 @@ func TestDoHandler(t *testing.T) {
 	// assertion
 	want := Body{Message: "sum is 6"}
 	var got Body
-	f.Extract().JSON(res, &got)
+	f.Extract().BindJSON(res, &got)
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("response body\nwant\n\t%+v\nbut\n\t%+v", want, got)
 	}
@@ -111,7 +111,7 @@ func TestDoHandler(t *testing.T) {
 	{
 		want := Body{Message: "sum is 6"}
 		var got Body
-		f.Extract().JSON(res, &got)
+		f.Extract().BindJSON(res, &got)
 		if !reflect.DeepEqual(want, got) {
 			t.Errorf("response body\nwant\n\t%+v\nbut\n\t%+v", want, got)
 		}

@@ -21,11 +21,7 @@ func Test(t *testing.T) {
 		tenuki.AssertStatus(200),
 	)
 
-	var got map[string]string
-	f.Extract().JSON(res, &got)
-
-	difftest.AssertGotAndWantString(t,
-		got,
-		`{"message": "hello world"}`,
-	)
+	got := f.Extract().JSON(res)
+	want := `{"message": "hello world"}`
+	difftest.AssertGotAndWantString(t, got, want)
 }

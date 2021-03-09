@@ -1,5 +1,6 @@
 test:
 	go test -v ./...
+	go test ./_examples/*
 .PHONY: test
 
 test-with-writefile:
