@@ -1,18 +1,17 @@
 package httputil
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
 
 func DumpRequestJSON(
 	req *http.Request,
 	body bool,
-	extractInfo func(*http.Request, io.Reader) (interface{ Info() interface{} }, error),
-) ([]byte, error) {
+	extractInfo func(*http.Request) (style.Info, error),
+) (style.Info, error) {
 	var err error
 	save := req.Body
 	{
@@ -25,30 +24,23 @@ func DumpRequestJSON(
 			}
 		}
 	}
-	info, err := extractInfo(req, save)
+	info, err := extractInfo(req)
+	req.Body = save
 	if err != nil {
 		return nil, fmt.Errorf("extract request info, %w", err)
 	}
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
-	enc.SetIndent("", "  ")
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(info); err != nil {
-		return nil, fmt.Errorf("encode json, %w", err)
-	}
-	return b.Bytes(), nil
+	return info, nil
 }
 
 func DumpResponseJSON(
 	resp *http.Response,
 	body bool,
-	extractInfo func(*http.Response, io.Reader) (interface{ Info() interface{} }, error),
-) ([]byte, error) {
+	extractInfo func(*http.Response) (style.Info, error),
+) (style.Info, error) {
 	var err error
 	save := resp.Body
 	savecl := resp.ContentLength
 
-	// TODO: content-type, json の場合は取り出す
 	{
 		if !body {
 			// For content length of zero. Make sure the body is an empty
@@ -68,19 +60,11 @@ func DumpResponseJSON(
 		}
 	}
 
-	info, err := extractInfo(resp, resp.Body)
+	info, err := extractInfo(resp)
 	resp.Body = save
 	resp.ContentLength = savecl
 	if err != nil {
 		return nil, fmt.Errorf("extract response info, %w", err)
 	}
-
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
-	enc.SetIndent("", "  ")
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(info); err != nil {
-		return nil, fmt.Errorf("encode json, %w", err)
-	}
-	return b.Bytes(), nil
+	return info, nil
 }

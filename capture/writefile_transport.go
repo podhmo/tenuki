@@ -10,7 +10,81 @@ import (
 	"path/filepath"
 	"strings"
 	"sync/atomic"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
+
+type WriteFileTransport struct {
+	Transport http.RoundTripper
+	*FileManager
+	Layout    *Layout
+	GetPrefix func() string // xxx: use t.Name()
+}
+
+func (wt *WriteFileTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	transport := wt.Transport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+	s, err := wt.HandleRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	res, err := transport.RoundTrip(req)
+	if err != nil {
+		return nil, wt.HandleError(req, s, err)
+	}
+	if err := wt.HandleResponse(res, req, s); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (wt *WriteFileTransport) HandleRequest(req *http.Request) (style.State, error) {
+	layout := wt.Layout
+	if layout == nil {
+		layout = DefaultLayout
+	}
+	s, err := layout.Request.Extract(req)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func (wt *WriteFileTransport) HandleError(req *http.Request, s style.State, err error) error {
+	// TODO: dump request?
+	s.Info().HandleError(func() (io.WriteCloser, error) {
+		filename := wt.FileName(req, wt.GetPrefix(), ".error", 0)
+		return wt.BaseDir.Open(filename)
+	}, err)
+	return err
+}
+
+func (wt *WriteFileTransport) HandleResponse(res *http.Response, req *http.Request, s style.State) error {
+	filename := wt.FileName(req, wt.GetPrefix(), ".res", 0)
+	f, err := wt.BaseDir.Open(filename)
+	if err != nil {
+		return fmt.Errorf("in response, open: %w", err)
+	}
+	defer f.Close()
+
+	layout := wt.Layout
+	if layout == nil {
+		layout = DefaultLayout
+	}
+	s2, err := layout.Response.Extract(res)
+	if err != nil {
+		if writeReqErr := s.Emit(f); writeReqErr != nil {
+			log.Printf("on error, at least writing request info, but it is also error %+v", writeReqErr)
+		}
+		return err
+	}
+	if err := s.EmitBoth(f, s2); err != nil {
+		return err
+	}
+	return nil
+}
 
 type FileManager struct {
 	BaseDir Dir
@@ -75,92 +149,4 @@ func (d Dir) Open(filename string) (io.WriteCloser, error) {
 	fullname := filepath.Join(dir, filename)
 	log.Println("\ttrace to", fullname)
 	return os.Create(fullname)
-}
-
-type WriteFileTransport struct {
-	Transport http.RoundTripper
-	*FileManager
-	Layout    *Layout
-	GetPrefix func() string // xxx: use t.Name()
-}
-
-func (wt *WriteFileTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	transport := wt.Transport
-	if transport == nil {
-		transport = http.DefaultTransport
-	}
-	err := wt.DumpRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	res, err := transport.RoundTrip(req)
-	if err != nil {
-		return nil, wt.DumpError(req, err)
-	}
-	if err := wt.DumpResponse(req, res); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-func (wt *WriteFileTransport) DumpRequest(req *http.Request) error {
-	filename := wt.FileName(req, wt.GetPrefix(), ".req", 1)
-	f, err := wt.BaseDir.Open(filename)
-	if err != nil {
-		return fmt.Errorf("in request, open: %w", err)
-	}
-	defer f.Close()
-
-	layout := wt.Layout
-	if layout == nil {
-		layout = DefaultLayout
-	}
-	b, err := layout.Request.Extract(req)
-	if err != nil {
-		return err
-	}
-
-	f.Write(b)
-	return nil
-}
-
-func (wt *WriteFileTransport) DumpError(req *http.Request, err error) error {
-	filename := wt.FileName(req, wt.GetPrefix(), ".error", 0)
-	f, _ := wt.BaseDir.Open(filename)
-	wt.dumpHeader(f, req)
-	fmt.Fprintf(f, "%+v\n", err)
-	return err
-}
-
-func (wt *WriteFileTransport) DumpResponse(req *http.Request, res *http.Response) error {
-	filename := wt.FileName(req, wt.GetPrefix(), ".res", 0)
-	f, err := wt.BaseDir.Open(filename)
-	if err != nil {
-		return fmt.Errorf("in response, open: %w", err)
-	}
-	defer f.Close()
-
-	if req != nil {
-		wt.dumpHeader(f, req)
-	}
-	layout := wt.Layout
-	if layout == nil {
-		layout = DefaultLayout
-	}
-	b, err := layout.Response.Extract(res)
-	f.Write(b)
-	return nil
-}
-
-func (wt *WriteFileTransport) dumpHeader(w io.Writer, req *http.Request) {
-	reqURI := req.RequestURI
-	if reqURI == "" {
-		reqURI = req.URL.RequestURI()
-	}
-	method := req.Method
-	if method == "" {
-		method = "GET"
-	}
-	fmt.Fprintf(w, "%s %s HTTP/%d.%d\r\n", method,
-		reqURI, req.ProtoMajor, req.ProtoMinor)
 }

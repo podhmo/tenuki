@@ -1,8 +1,9 @@
 package openapistyle
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"mime"
 	"net/http"
@@ -11,19 +12,38 @@ import (
 )
 
 // TODO: trim security information
-func toPaths(req *http.Request, body io.Reader) (Paths, error) {
+func toPaths(req *http.Request, info *Info) (Paths, error) {
+	{
+
+		reqURI := req.RequestURI
+		if reqURI == "" {
+			reqURI = req.URL.RequestURI()
+		}
+
+		absRequestURI := strings.HasPrefix(req.RequestURI, "http://") || strings.HasPrefix(req.RequestURI, "https://")
+		if !absRequestURI {
+			reqURI = fmt.Sprintf("%s://%s%s", valueOrDefault(req.URL.Scheme, "https"), req.URL.Host, reqURI)
+		}
+		info.URL = reqURI
+
+		info.Method = valueOrDefault(req.Method, "GET")
+		info.HTTPVersion = req.Proto
+		info.HeaderSize = -1 // TODO
+		info.BodySize = -1   // TODO
+	}
+
 	r := Paths{}
-	pathItem, err := toPathItem(req, body)
+	pathItem, err := toPathItem(req, info)
 	if err != nil {
 		return r, fmt.Errorf("extract pathItem, %w", err)
 	}
 	r[req.URL.Path] = pathItem
 	return r, nil
 }
-func toPathItem(req *http.Request, body io.Reader) (PathItem, error) {
+func toPathItem(req *http.Request, info *Info) (PathItem, error) {
 	r := PathItem{}
 
-	op, err := toOperation(req, body)
+	op, err := toOperation(req, info)
 	if err != nil {
 		return r, fmt.Errorf("extract operation, %w", err)
 	}
@@ -50,18 +70,20 @@ func toPathItem(req *http.Request, body io.Reader) (PathItem, error) {
 	return r, nil
 }
 
-func toOperation(req *http.Request, body io.Reader) (Operation, error) {
+func toOperation(req *http.Request, info *Info) (Operation, error) {
 	r := Operation{}
 
-	if body != nil {
-		content, err := toContent(req, body)
-		if err != nil {
-			return r, fmt.Errorf("extract content, %w", err)
-		}
+	if req.Body != nil {
 		ct, _, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
 		if err != nil {
 			log.Printf("parse content type, %+v", err)
 			ct = strings.ToLower(req.Header.Get("Content-Type"))
+		}
+		info.ContentType = ct
+
+		content, err := toContent(req, info)
+		if err != nil {
+			return r, fmt.Errorf("extract content, %w", err)
 		}
 		r.RequestBody = &RequestBody{
 			Content: map[string]MediaType{
@@ -122,10 +144,28 @@ func toOperation(req *http.Request, body io.Reader) (Operation, error) {
 	return r, nil
 }
 
-func toContent(req *http.Request, body io.Reader) (MediaType, error) {
+func toContent(req *http.Request, info *Info) (MediaType, error) {
 	r := MediaType{}
-	return r, nil
+	body := req.Body
+	switch ct := info.ContentType; ct {
+	case "application/json", "text/json":
+		if err := json.NewDecoder(body).Decode(&r.Example); err != nil {
+			return r, fmt.Errorf("unmarshal json body, %w", err)
+		}
+		return r, nil
+	default:
+		if strings.HasPrefix(ct, "text/") || ct == "application/x-www-form-urlencoded" {
+			var b bytes.Buffer
+			if _, err := b.ReadFrom(body); err != nil {
+				return r, fmt.Errorf("read body, %w", err)
+			}
+			r.Example = b.String()
+			return r, nil
+		}
+		log.Printf("Content-Type=%q is not supported, so just ignored", ct)
+		return r, nil
+	}
 }
 
-// func toOperation(req *http.Request, body io.Reader) (Operation, error) {
+// func toOperation(req *http.Request, info *Info) (Operation, error) {
 // }

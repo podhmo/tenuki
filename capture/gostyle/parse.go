@@ -10,22 +10,30 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
 
 // reflection version
 
 type Info map[string]interface{}
 
-// for interface
-func (i Info) Info() interface{} {
-	return nil
+func (i Info) Merge(i2 style.Info) style.Info {
+	return Info{
+		"Request":  i,
+		"Response": i2,
+	}
 }
 
-func parseRequest(req *http.Request, body io.Reader) (Info, error) {
+// TODO
+func (i Info) HandleError(open func() (io.WriteCloser, error), err error) {
+}
+
+func parseRequest(req *http.Request) (Info, error) {
 	info := InfoFromInterface(req, []string{
 		"URL", "Body", "GetBody", "Close", "Trailer", "TLS", "Cancel", "Response", "ctx",
 	})
-
+	body := req.Body
 	if body != nil {
 		ct, _, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
 		if err != nil {
@@ -43,11 +51,11 @@ func parseRequest(req *http.Request, body io.Reader) (Info, error) {
 	return info, nil
 }
 
-func parseResponse(resp *http.Response, body io.Reader) (Info, error) {
+func parseResponse(resp *http.Response) (Info, error) {
 	info := InfoFromInterface(resp, []string{
 		"Close", "Body", "Trailer", "Request", "TLS", "Request",
 	})
-
+	body := resp.Body
 	if body != nil {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
@@ -84,8 +92,7 @@ toplevel:
 }
 
 func parseBody(body io.Reader, contentType string) (interface{}, error) {
-	ct := strings.SplitN(contentType, "+", 2)[0]
-	switch ct {
+	switch ct := contentType; ct {
 	case "application/json", "text/json":
 		var ob interface{}
 		if err := json.NewDecoder(body).Decode(&ob); err != nil {

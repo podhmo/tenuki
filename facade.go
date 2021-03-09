@@ -34,12 +34,19 @@ func New(t *testing.T, options ...func(*Config)) *Facade {
 func (f *Facade) NewRequest(
 	method, url string, body io.Reader,
 ) *http.Request {
-	t := f.T
-	t.Helper()
+	f.T.Helper()
 	if !strings.Contains(url, "://") {
-		url = "http://example.net" + strings.TrimPrefix(url, "/")
+		url = "http://example.net/" + strings.TrimPrefix(url, "/")
 	}
-	return NewRequest(t, method, url, body)
+	return NewRequest(f.T, method, url, body)
+}
+func (f *Facade) NewJSONRequest(
+	method, url string, body io.Reader,
+) *http.Request {
+	f.T.Helper()
+	req := f.NewRequest(method, url, body)
+	req.Header.Add("Content-Type", "application/json")
+	return req
 }
 
 func (f *Facade) Do(
@@ -71,7 +78,12 @@ func (f *Facade) Do(
 
 	res, err := client.Do(req)
 	if err != nil {
-		t.Fatalf("!! Do: %+v", err)
+		if a.ExpectError == nil {
+			t.Fatalf("!! Do: %+v", err)
+		}
+		if err := a.ExpectError(err); err != nil {
+			t.Fatalf("!! Do, ExpectError: %+v", err)
+		}
 	}
 
 	for _, check := range a.Checks {
@@ -105,8 +117,9 @@ func (f *Facade) DoHandlerFunc(
 }
 
 type Assertion struct {
-	StatusCode int
-	Checks     []func(t *testing.T, res *http.Response)
+	StatusCode  int
+	Checks      []func(t *testing.T, res *http.Response)
+	ExpectError func(err error) error
 }
 
 func AssertStatus(code int) AssertOption {
@@ -118,6 +131,11 @@ func AssertStatus(code int) AssertOption {
 				t.Errorf("status code:\nwant\n\t%+v\nbut\n\t%+v", a.StatusCode, res.StatusCode)
 			}
 		})
+	}
+}
+func AssertError(handler func(err error) error) AssertOption {
+	return func(a *Assertion) {
+		a.ExpectError = handler
 	}
 }
 

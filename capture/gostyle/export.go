@@ -1,14 +1,17 @@
 package gostyle
 
 import (
-	"io"
 	"net/http"
+
+	"github.com/podhmo/tenuki/capture/style"
 )
 
-func ExtractRequestInfo(req *http.Request, body io.Reader) (interface{ Info() interface{} }, error) {
-	return parseRequest(req, body)
+func ExtractRequestInfo(req *http.Request) (style.Info, error) {
+	info, err := parseRequest(req)
+	return info, err
 }
 
-func ExtractResponseInfo(resp *http.Response, body io.Reader) (interface{ Info() interface{} }, error) {
-	return parseResponse(resp, body)
+func ExtractResponseInfo(resp *http.Response) (style.Info, error) {
+	info, err := parseResponse(resp)
+	return info, err
 }
