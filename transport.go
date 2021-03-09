@@ -3,6 +3,7 @@ package tenuki
 import (
 	"net/http"
 	"net/http/httptest"
+	"testing"
 )
 
 type RoundTripFunc func(*http.Request) (*http.Response, error)
@@ -34,4 +35,14 @@ func (t *HandlerTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 		t.After(res, r)
 	}
 	return res, nil
+}
+
+// NewErrorTransport returns a transport that returns error. this is one of the test utilities.
+func NewErrorTransport(t *testing.T, genErr func() error) RoundTripFunc {
+	return func(*http.Request) (*http.Response, error) {
+		t.Helper()
+		err := genErr()
+		t.Logf("test helper -- returns error %T in transport (for %s) ..", err, t.Name())
+		return nil, err
+	}
 }

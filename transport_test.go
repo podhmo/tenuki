@@ -2,6 +2,7 @@ package tenuki_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -25,7 +26,7 @@ func TestHandlerRoundTripper(t *testing.T) {
 	req.URL.RawQuery = q.Encode()
 
 	client := &http.Client{
-		Timeout:   1 * time.Second,
+		Timeout:   100 * time.Millisecond,
 		Transport: transport,
 	}
 
@@ -45,5 +46,21 @@ func TestHandlerRoundTripper(t *testing.T) {
 	got := b.String()
 	if want != got {
 		t.Errorf("response body\nwant\n\t%+v\nbut\n\t%+v", want, got)
+	}
+}
+
+func TestErrorTransport(t *testing.T) {
+	thisErr := fmt.Errorf("THIS!!")
+	transport := tenuki.NewErrorTransport(t, func() error { return thisErr })
+	req, _ := http.NewRequest("GET", "", nil)
+
+	client := &http.Client{
+		Timeout:   100 * time.Millisecond,
+		Transport: transport,
+	}
+
+	_, err := client.Do(req)
+	if !errors.Is(err, thisErr) {
+		t.Errorf("unexpected error is returned, %[1]T, %+[1]v", err)
 	}
 }
