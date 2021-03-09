@@ -3,6 +3,7 @@ package tenuki
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"reflect"
 )
@@ -14,6 +15,10 @@ type RenderFacade struct {
 }
 
 func Render(w http.ResponseWriter, r *http.Request) *RenderFacade {
+	log.Println("deprecated, use NewRender")
+	return NewRender(w, r)
+}
+func NewRender(w http.ResponseWriter, r *http.Request) *RenderFacade {
 	return &RenderFacade{
 		w:  w,
 		r:  r,
