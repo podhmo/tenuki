@@ -7,6 +7,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/podhmo/tenuki/capture"
 )
 
 type Facade struct {
@@ -76,6 +78,11 @@ func (f *Facade) Do(
 	if f.captureEnabled {
 		ct := NewCaptureTransport(t, client.Transport)
 		client.Transport = ct
+
+		// for logf output (but this code is not good)
+		if transport, ok := ct.Transport.(*capture.ConsoleTransport); ok {
+			transport.Printer = ct
+		}
 	}
 	defer func() {
 		f.Client.Transport = originalTransport
@@ -85,12 +92,14 @@ func (f *Facade) Do(
 	if err != nil {
 		if a.ExpectError == nil {
 			t.Fatalf("!! Do: %+v", err)
-		}
-		if err := a.ExpectError(err); err != nil {
+		} else if err := a.ExpectError(err); err != nil {
 			t.Fatalf("!! Do, ExpectError: %+v", err)
 		}
+	} else {
+		if a.ExpectError != nil {
+			t.Fatalf("!! Do, ExpectError: fatal is expected, but nil")
+		}
 	}
-
 	for _, check := range a.Checks {
 		check(t, res)
 	}
