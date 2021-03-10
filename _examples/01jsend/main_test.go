@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -76,8 +77,11 @@ func Test500(t *testing.T) {
 }
 
 func TestNetworkUnreached(t *testing.T) {
+	ts := httptest.NewServer(tenuki.NewCloseConnectionHandler(t))
+	defer ts.Close()
+
 	f := tenuki.New(t)
-	req := f.NewRequest("GET", "xxx://localhost.xxx", nil)
+	req := f.NewRequest("GET", ts.URL, nil)
 	f.Do(req,
 		tenuki.AssertError(func(err error) error {
 			if err == nil {
