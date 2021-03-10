@@ -1,0 +1,3 @@
+{"file": "Test200@GET.res", "url": "http://example.net/"}
+{"file": "Test400@POST.res", "url": "http://example.net/articles"}
+{"file": "Test500@GET.res", "url": "http://example.net/"}

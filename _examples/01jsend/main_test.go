@@ -13,8 +13,8 @@ import (
 // 	tenuki.DefaultLayout = capture.OpenAPILayout
 // }
 
-func TestSuccess(t *testing.T) {
-	targetHandler := SuccessHandler
+func Test200(t *testing.T) {
+	targetHandler := Handler200
 
 	f := tenuki.New(t)
 	req := f.NewRequest("GET", "", nil)
@@ -36,8 +36,8 @@ func TestSuccess(t *testing.T) {
 	difftest.AssertGotAndWantString(t, got, want)
 }
 
-func TestFail(t *testing.T) {
-	targetHandler := FailHandler
+func Test400(t *testing.T) {
+	targetHandler := Handler400
 
 	f := tenuki.New(t)
 	req := f.NewJSONRequest("POST", "/articles", strings.NewReader(`{"content": "Some useful content"}`))
@@ -57,8 +57,8 @@ func TestFail(t *testing.T) {
 	difftest.AssertGotAndWantString(t, got, want)
 }
 
-func TestError(t *testing.T) {
-	targetHandler := ErrorHandler
+func Test500(t *testing.T) {
+	targetHandler := Handler500
 
 	f := tenuki.New(t)
 	req := f.NewRequest("GET", "", nil)

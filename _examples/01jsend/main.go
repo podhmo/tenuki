@@ -20,7 +20,7 @@ const (
 	MessageBadRequest jsend.Message = "bad request"
 )
 
-func SuccessHandler(w http.ResponseWriter, r *http.Request) {
+func Handler200(w http.ResponseWriter, r *http.Request) {
 	tenuki.Render(w, r).JSON(200, jsend.Success(map[string]interface{}{
 		"posts": []Post{
 			Post{ID: 1, Title: "A blog post", Body: "Some useful content"},
@@ -29,13 +29,13 @@ func SuccessHandler(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
-func FailHandler(w http.ResponseWriter, r *http.Request) {
+func Handler400(w http.ResponseWriter, r *http.Request) {
 	tenuki.Render(w, r).JSON(400, jsend.Fail(map[string]interface{}{
 		"title": "A title is required",
 	}, MessageBadRequest))
 }
 
-func ErrorHandler(w http.ResponseWriter, r *http.Request) {
+func Handler500(w http.ResponseWriter, r *http.Request) {
 	err := fmt.Errorf("Unable to communicate with database")
 	// TODO: stack trace if debug
 	tenuki.Render(w, r).JSON(500, jsend.Error(jsend.Message(err.Error())))
