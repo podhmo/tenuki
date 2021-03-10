@@ -1,0 +1,3 @@
+{"file": "TestSuccess@GET.res", "url": "http://example.net/"}
+{"file": "TestFail@POST.res", "url": "http://example.net/articles"}
+{"file": "TestError@GET.res", "url": "http://example.net/"}
